@@ -46,12 +46,14 @@ defmodule TiendaAlbumesWeb.Layouts do
 
       <nav class="flex items-center gap-6" style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">
         <a href="/inventario" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Inventario</a>
-        <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Ventas</a>
-        <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Clientes</a>
-        <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Reportes</a>
+        <a href="/ventas" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Ventas</a>
+        <a href="/clientes" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Clientes</a>
+        <a href="/reportes" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Reportes</a>
+        <div class="w-px h-4" style="background-color: #c8d4a0;"></div>
+        <.theme_toggle />
         <div class="w-px h-4" style="background-color: #c8d4a0;"></div>
         <%= if @current_scope do %>
-          <span style="color: #97a77d;">{@current_scope.user.email}</span>
+          <span style="color: #97a77d; text-transform: none; letter-spacing: 0;">{@current_scope.user.email}</span>
           <.link href={~p"/users/log-out"} method="delete" style="color: #a33a2a; font-weight: 600;">Salir</.link>
         <% else %>
           <.link href={~p"/users/log-in"} style="color: #5a7a3a;">Entrar</.link>
