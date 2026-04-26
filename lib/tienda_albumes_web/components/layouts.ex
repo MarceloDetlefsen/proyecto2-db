@@ -45,7 +45,7 @@ defmodule TiendaAlbumesWeb.Layouts do
       </a>
 
       <nav class="flex items-center gap-6" style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">
-        <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Inventario</a>
+        <a href="/inventario" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Inventario</a>
         <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Ventas</a>
         <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Clientes</a>
         <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Reportes</a>

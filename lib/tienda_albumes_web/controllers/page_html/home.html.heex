@@ -3,20 +3,34 @@
   <%!-- HERO BANNER --%>
   <div class="rounded-box border p-8 mb-8 flex items-center justify-between" style="background-color: #f1f5eb; border-color: #c8d4a0;">
     <div>
-      <p style="font-size: 10px; letter-spacing: 5px; text-transform: uppercase; color: #97a77d; margin-bottom: 8px;">Est. 2026 · Guatemala</p>
+      <p style="font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-bottom: 12px;">Sistema de gestión · Tienda de música</p>
       <h1 style="font-family: Georgia, serif; font-size: 2.5rem; font-weight: 700; color: #385404; line-height: 1.1; margin-bottom: 12px;">
         Discos &<br/>Vinilos
       </h1>
-      <p style="color: #6a7a54; font-size: 14px; letter-spacing: 1px;">Gestión de inventario, ventas y clientes</p>
+      <p style="color: #6a7a54; font-size: 13px; max-width: 420px; line-height: 1.6;">
+        Plataforma para administrar el inventario de álbumes y vinilos, registrar ventas, gestionar clientes y proveedores, y generar reportes de la tienda.
+      </p>
       <div class="flex gap-3 mt-6">
         <a href="/inventario" class="btn btn-primary btn-sm">Ver Inventario</a>
         <a href="/ventas" class="btn btn-sm" style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">Nueva Venta</a>
       </div>
     </div>
-    <div style="flex-shrink: 0;">
-      <div style="width: 120px; height: 120px; border-radius: 50%; background: repeating-radial-gradient(circle, #2a3a1a 0px, #2a3a1a 2px, #f1f5eb 2px, #f1f5eb 4px); border: 3px solid #97a77d; position: relative;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 32px; height: 32px; border-radius: 50%; background-color: #b8c280; border: 2px solid #97a77d;"></div>
-      </div>
+    <div style="flex-shrink: 0; padding-left: 2rem;">
+      <svg viewBox="0 0 200 200" width="140" height="140" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="95" fill="#2a3a1a" />
+        <circle cx="100" cy="100" r="85" fill="#1a2a0a" />
+        <circle cx="100" cy="100" r="75" fill="#2a3a1a" />
+        <circle cx="100" cy="100" r="65" fill="#1a2a0a" />
+        <circle cx="100" cy="100" r="55" fill="#2a3a1a" />
+        <circle cx="100" cy="100" r="45" fill="#1a2a0a" />
+        <circle cx="100" cy="100" r="35" fill="#2a3a1a" />
+        <circle cx="100" cy="100" r="25" fill="#1a2a0a" />
+        <circle cx="100" cy="100" r="15" fill="#2a3a1a" />
+        <circle cx="100" cy="100" r="8" fill="#b8c280" />
+        <circle cx="100" cy="100" r="4" fill="#f1f5eb" />
+        <circle cx="100" cy="100" r="95" fill="none" stroke="#3a5010" stroke-width="0.5" opacity="0.3" />
+        <rect x="97" y="5" width="6" height="20" rx="3" fill="#97a77d" />
+      </svg>
     </div>
   </div>
 
@@ -40,50 +54,7 @@
     </div>
   </div>
 
-  <%!-- ACCESOS RÁPIDOS --%>
-  <div class="mb-8">
-    <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d; margin-bottom: 16px; border-bottom: 1px solid #c8d4a0; padding-bottom: 8px;">— Accesos rápidos —</p>
-    <div class="grid grid-cols-2 gap-4">
-      <a href="/inventario" class="rounded-box border p-6 flex items-start gap-4 transition-all hover:shadow-md" style="background-color: #f7fbf6; border-color: #c8d4a0; text-decoration: none;">
-        <div style="width: 40px; height: 40px; border-radius: 50%; background-color: #e2e8d5; border: 1px solid #c8d4a0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <span style="font-size: 18px;">🎵</span>
-        </div>
-        <div>
-          <p style="font-family: Georgia, serif; font-size: 15px; font-weight: 700; color: #385404; margin-bottom: 4px;">Inventario</p>
-          <p style="font-size: 12px; color: #97a77d;">Gestiona productos, álbumes y stock disponible</p>
-        </div>
-      </a>
-      <a href="/ventas" class="rounded-box border p-6 flex items-start gap-4 transition-all hover:shadow-md" style="background-color: #f7fbf6; border-color: #c8d4a0; text-decoration: none;">
-        <div style="width: 40px; height: 40px; border-radius: 50%; background-color: #e2e8d5; border: 1px solid #c8d4a0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <span style="font-size: 18px;">🧾</span>
-        </div>
-        <div>
-          <p style="font-family: Georgia, serif; font-size: 15px; font-weight: 700; color: #385404; margin-bottom: 4px;">Ventas</p>
-          <p style="font-size: 12px; color: #97a77d;">Registra y consulta el historial de compras</p>
-        </div>
-      </a>
-      <a href="/clientes" class="rounded-box border p-6 flex items-start gap-4 transition-all hover:shadow-md" style="background-color: #f7fbf6; border-color: #c8d4a0; text-decoration: none;">
-        <div style="width: 40px; height: 40px; border-radius: 50%; background-color: #e2e8d5; border: 1px solid #c8d4a0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <span style="font-size: 18px;">👥</span>
-        </div>
-        <div>
-          <p style="font-family: Georgia, serif; font-size: 15px; font-weight: 700; color: #385404; margin-bottom: 4px;">Clientes</p>
-          <p style="font-size: 12px; color: #97a77d;">Administra la base de clientes de la tienda</p>
-        </div>
-      </a>
-      <a href="/reportes" class="rounded-box border p-6 flex items-start gap-4 transition-all hover:shadow-md" style="background-color: #f7fbf6; border-color: #c8d4a0; text-decoration: none;">
-        <div style="width: 40px; height: 40px; border-radius: 50%; background-color: #e2e8d5; border: 1px solid #c8d4a0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <span style="font-size: 18px;">📊</span>
-        </div>
-        <div>
-          <p style="font-family: Georgia, serif; font-size: 15px; font-weight: 700; color: #385404; margin-bottom: 4px;">Reportes</p>
-          <p style="font-size: 12px; color: #97a77d;">Consultas avanzadas y reportes de ventas</p>
-        </div>
-      </a>
-    </div>
-  </div>
-
-  <%!-- ÁLBUMES RECIENTES --%>
+  <%!-- CATÁLOGO DESTACADO --%>
   <div>
     <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d; margin-bottom: 16px; border-bottom: 1px solid #c8d4a0; padding-bottom: 8px;">— Catálogo destacado —</p>
     <div class="grid grid-cols-4 gap-4">
@@ -94,9 +65,14 @@
         {"Homogenic", "Björk", "Electronic", "$33.00"}
       ] do %>
         <div class="rounded-box border p-4" style="background-color: #f7fbf6; border-color: #c8d4a0;">
-          <div style="width: 50px; height: 50px; border-radius: 50%; background: repeating-radial-gradient(circle, #2a3a1a 0px, #2a3a1a 1.5px, #f1f5eb 1.5px, #f1f5eb 3px); border: 2px solid #c8d4a0; margin-bottom: 12px; position: relative;">
-            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; border-radius: 50%; background-color: #b8c280;"></div>
-          </div>
+          <svg viewBox="0 0 80 80" width="50" height="50" style="margin-bottom: 12px;" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="40" cy="40" r="38" fill="#2a3a1a" />
+            <circle cx="40" cy="40" r="30" fill="#1a2a0a" />
+            <circle cx="40" cy="40" r="22" fill="#2a3a1a" />
+            <circle cx="40" cy="40" r="14" fill="#1a2a0a" />
+            <circle cx="40" cy="40" r="6" fill="#b8c280" />
+            <circle cx="40" cy="40" r="3" fill="#f1f5eb" />
+          </svg>
           <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; margin-bottom: 2px;">{genero}</p>
           <p style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; color: #385404; line-height: 1.3; margin-bottom: 2px;">{titulo}</p>
           <p style="font-size: 11px; color: #97a77d; margin-bottom: 8px;">{artista}</p>
