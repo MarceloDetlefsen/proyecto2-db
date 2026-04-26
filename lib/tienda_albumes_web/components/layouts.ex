@@ -35,35 +35,33 @@ defmodule TiendaAlbumesWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
-      </div>
+    <header class="border-b px-6 py-3 flex items-center justify-between" style="background-color: #f1f5eb; border-color: #c8d4a0;">
+      <a href="/" class="flex items-center gap-3">
+        <div style="width:36px; height:36px; border-radius:50%; background: repeating-radial-gradient(circle, #2a3a1a 0px, #2a3a1a 2px, #f1f5eb 2px, #f1f5eb 4px); border: 2px solid #97a77d; flex-shrink:0;"></div>
+        <div>
+          <div style="font-family: Georgia, serif; font-size: 17px; font-weight: 700; color: #385404; letter-spacing: 1px;">Tienda Álbumes</div>
+          <div style="font-size: 9px; letter-spacing: 5px; color: #97a77d; text-transform: uppercase;">Est. 2026 · Guatemala</div>
+        </div>
+      </a>
+
+      <nav class="flex items-center gap-6" style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">
+        <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Inventario</a>
+        <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Ventas</a>
+        <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Clientes</a>
+        <a href="/" style="color: #5a7a3a;" class="hover:text-primary transition-colors">Reportes</a>
+        <div class="w-px h-4" style="background-color: #c8d4a0;"></div>
+        <%= if @current_scope do %>
+          <span style="color: #97a77d;">{@current_scope.user.email}</span>
+          <.link href={~p"/users/log-out"} method="delete" style="color: #a33a2a; font-weight: 600;">Salir</.link>
+        <% else %>
+          <.link href={~p"/users/log-in"} style="color: #5a7a3a;">Entrar</.link>
+          <.link href={~p"/users/register"} class="btn btn-sm btn-primary">Registro</.link>
+        <% end %>
+      </nav>
     </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+    <main class="px-6 py-8">
+      <div class="mx-auto max-w-5xl">
         {render_slot(@inner_block)}
       </div>
     </main>
