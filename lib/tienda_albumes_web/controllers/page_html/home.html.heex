@@ -1,18 +1,28 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
-
   <%!-- HERO BANNER --%>
-  <div class="rounded-box border p-8 mb-8 flex items-center justify-between" style="background-color: #f1f5eb; border-color: #c8d4a0;">
+  <div
+    class="rounded-box border p-8 mb-8 flex items-center justify-between"
+    style="background-color: #f1f5eb; border-color: #c8d4a0;"
+  >
     <div>
-      <p style="font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-bottom: 12px;">Sistema de gestión · Tienda de música</p>
+      <p style="font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-bottom: 12px;">
+        Sistema de gestión · Tienda de música
+      </p>
       <h1 style="font-family: Georgia, serif; font-size: 2.5rem; font-weight: 700; color: #385404; line-height: 1.1; margin-bottom: 12px;">
-        Discos &<br/>Vinilos
+        Discos &<br />Vinilos
       </h1>
       <p style="color: #6a7a54; font-size: 13px; max-width: 420px; line-height: 1.6;">
         Plataforma para administrar el inventario de álbumes y vinilos, registrar ventas, gestionar clientes y proveedores, y generar reportes de la tienda.
       </p>
       <div class="flex gap-3 mt-6">
         <a href="/inventario" class="btn btn-primary btn-sm">Ver Inventario</a>
-        <a href="/ventas" class="btn btn-sm" style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">Nueva Venta</a>
+        <a
+          href="/ventas"
+          class="btn btn-sm"
+          style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+        >
+          Nueva Venta
+        </a>
       </div>
     </div>
     <div style="flex-shrink: 0; padding-left: 2rem;">
@@ -28,7 +38,15 @@
         <circle cx="100" cy="100" r="15" fill="#2a3a1a" />
         <circle cx="100" cy="100" r="8" fill="#b8c280" />
         <circle cx="100" cy="100" r="4" fill="#f1f5eb" />
-        <circle cx="100" cy="100" r="95" fill="none" stroke="#3a5010" stroke-width="0.5" opacity="0.3" />
+        <circle
+          cx="100"
+          cy="100"
+          r="95"
+          fill="none"
+          stroke="#3a5010"
+          stroke-width="0.5"
+          opacity="0.3"
+        />
         <rect x="97" y="5" width="6" height="20" rx="3" fill="#97a77d" />
       </svg>
     </div>
@@ -36,27 +54,57 @@
 
   <%!-- ESTADÍSTICAS --%>
   <div class="grid grid-cols-4 gap-4 mb-8">
-    <div class="rounded-box border p-5 text-center" style="background-color: #f7fbf6; border-color: #c8d4a0;">
-      <p style="font-family: Georgia, serif; font-size: 2rem; font-weight: 700; color: #385404;">50</p>
-      <p style="font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-top: 4px;">Productos</p>
+    <div
+      class="rounded-box border p-5 text-center"
+      style="background-color: #f7fbf6; border-color: #c8d4a0;"
+    >
+      <p style="font-family: Georgia, serif; font-size: 2rem; font-weight: 700; color: #385404;">
+        50
+      </p>
+      <p style="font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-top: 4px;">
+        Productos
+      </p>
     </div>
-    <div class="rounded-box border p-5 text-center" style="background-color: #f7fbf6; border-color: #c8d4a0;">
-      <p style="font-family: Georgia, serif; font-size: 2rem; font-weight: 700; color: #385404;">25</p>
-      <p style="font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-top: 4px;">Artistas</p>
+    <div
+      class="rounded-box border p-5 text-center"
+      style="background-color: #f7fbf6; border-color: #c8d4a0;"
+    >
+      <p style="font-family: Georgia, serif; font-size: 2rem; font-weight: 700; color: #385404;">
+        25
+      </p>
+      <p style="font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-top: 4px;">
+        Artistas
+      </p>
     </div>
-    <div class="rounded-box border p-5 text-center" style="background-color: #f7fbf6; border-color: #c8d4a0;">
-      <p style="font-family: Georgia, serif; font-size: 2rem; font-weight: 700; color: #385404;">25</p>
-      <p style="font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-top: 4px;">Ventas</p>
+    <div
+      class="rounded-box border p-5 text-center"
+      style="background-color: #f7fbf6; border-color: #c8d4a0;"
+    >
+      <p style="font-family: Georgia, serif; font-size: 2rem; font-weight: 700; color: #385404;">
+        25
+      </p>
+      <p style="font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-top: 4px;">
+        Ventas
+      </p>
     </div>
-    <div class="rounded-box border p-5 text-center" style="background-color: #f7fbf6; border-color: #c8d4a0;">
-      <p style="font-family: Georgia, serif; font-size: 2rem; font-weight: 700; color: #385404;">25</p>
-      <p style="font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-top: 4px;">Clientes</p>
+    <div
+      class="rounded-box border p-5 text-center"
+      style="background-color: #f7fbf6; border-color: #c8d4a0;"
+    >
+      <p style="font-family: Georgia, serif; font-size: 2rem; font-weight: 700; color: #385404;">
+        25
+      </p>
+      <p style="font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-top: 4px;">
+        Clientes
+      </p>
     </div>
   </div>
 
   <%!-- CATÁLOGO DESTACADO --%>
   <div>
-    <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d; margin-bottom: 16px; border-bottom: 1px solid #c8d4a0; padding-bottom: 8px;">— Catálogo destacado —</p>
+    <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d; margin-bottom: 16px; border-bottom: 1px solid #c8d4a0; padding-bottom: 8px;">
+      — Catálogo destacado —
+    </p>
     <div class="grid grid-cols-4 gap-4">
       <%= for {titulo, artista, genero, precio} <- [
         {"Loveless", "My Bloody Valentine", "Shoegaze", "$35.00"},
@@ -64,8 +112,17 @@
         {"Deathconsciousness", "Have a Nice Life", "Ambient", "$40.00"},
         {"Homogenic", "Björk", "Electronic", "$33.00"}
       ] do %>
-        <div class="rounded-box border p-4" style="background-color: #f7fbf6; border-color: #c8d4a0;">
-          <svg viewBox="0 0 80 80" width="50" height="50" style="margin-bottom: 12px;" xmlns="http://www.w3.org/2000/svg">
+        <div
+          class="rounded-box border p-4"
+          style="background-color: #f7fbf6; border-color: #c8d4a0;"
+        >
+          <svg
+            viewBox="0 0 80 80"
+            width="50"
+            height="50"
+            style="margin-bottom: 12px;"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <circle cx="40" cy="40" r="38" fill="#2a3a1a" />
             <circle cx="40" cy="40" r="30" fill="#1a2a0a" />
             <circle cx="40" cy="40" r="22" fill="#2a3a1a" />
@@ -73,13 +130,16 @@
             <circle cx="40" cy="40" r="6" fill="#b8c280" />
             <circle cx="40" cy="40" r="3" fill="#f1f5eb" />
           </svg>
-          <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; margin-bottom: 2px;">{genero}</p>
-          <p style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; color: #385404; line-height: 1.3; margin-bottom: 2px;">{titulo}</p>
+          <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; margin-bottom: 2px;">
+            {genero}
+          </p>
+          <p style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; color: #385404; line-height: 1.3; margin-bottom: 2px;">
+            {titulo}
+          </p>
           <p style="font-size: 11px; color: #97a77d; margin-bottom: 8px;">{artista}</p>
           <p style="font-size: 14px; font-weight: 700; color: #385404;">{precio}</p>
         </div>
       <% end %>
     </div>
   </div>
-
 </Layouts.app>

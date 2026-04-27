@@ -8,29 +8,29 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     # Crea el VIEW automáticamente si no existe todavía
     crear_view_si_no_existe()
 
-    productos  = listar_productos(%{})
-    artistas   = listar_artistas()
-    generos    = listar_generos()
+    productos = listar_productos(%{})
+    artistas = listar_artistas()
+    generos = listar_generos()
     estadisticas = listar_estadisticas()
     top_artistas = listar_top_artistas()
 
     {:ok,
      socket
-     |> assign(:productos,     productos)
-     |> assign(:artistas,      artistas)
-     |> assign(:generos,       generos)
-     |> assign(:estadisticas,  estadisticas)
-     |> assign(:top_artistas,  top_artistas)
-     |> assign(:vista_activa,  :inventario)
+     |> assign(:productos, productos)
+     |> assign(:artistas, artistas)
+     |> assign(:generos, generos)
+     |> assign(:estadisticas, estadisticas)
+     |> assign(:top_artistas, top_artistas)
+     |> assign(:vista_activa, :inventario)
      |> assign(:filtros, %{
-       "formato"    => "",
-       "genero"     => "",
-       "artista"    => "",
-       "stock"      => "",
+       "formato" => "",
+       "genero" => "",
+       "artista" => "",
+       "stock" => "",
        "precio_min" => "",
        "precio_max" => ""
      })
-     |> assign(:modal,             nil)
+     |> assign(:modal, nil)
      |> assign(:producto_editando, nil)}
   end
 
@@ -48,13 +48,23 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   # ──────────────────────────────────────────────
 
   def handle_event("filtrar", params, socket) do
-    filtros  = Map.take(params, ["formato", "genero", "artista", "stock", "precio_min", "precio_max"])
+    filtros =
+      Map.take(params, ["formato", "genero", "artista", "stock", "precio_min", "precio_max"])
+
     productos = listar_productos(filtros)
     {:noreply, socket |> assign(:productos, productos) |> assign(:filtros, filtros)}
   end
 
   def handle_event("limpiar_filtros", _params, socket) do
-    filtros  = %{"formato" => "", "genero" => "", "artista" => "", "stock" => "", "precio_min" => "", "precio_max" => ""}
+    filtros = %{
+      "formato" => "",
+      "genero" => "",
+      "artista" => "",
+      "stock" => "",
+      "precio_min" => "",
+      "precio_max" => ""
+    }
+
     productos = listar_productos(filtros)
     {:noreply, socket |> assign(:productos, productos) |> assign(:filtros, filtros)}
   end
@@ -80,10 +90,10 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   # Requisito: al menos 1 transacción explícita con manejo de error y ROLLBACK
   def handle_event("guardar_producto", params, socket) do
     %{
-      "id_album"   => id_album,
+      "id_album" => id_album,
       "id_formato" => id_formato,
-      "precio"     => precio,
-      "stock"      => stock
+      "precio" => precio,
+      "stock" => stock
     } = params
 
     # Verificamos que el álbum exista usando subquery con EXISTS (requisito subquery)
@@ -96,9 +106,11 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             SELECT 1 FROM album WHERE id_album = $1
           )
         """
+
         case repo.query(existe_sql, [String.to_integer(id_album)]) do
           {:ok, %{rows: [[true]]}} ->
             :ok
+
           _ ->
             repo.rollback(:album_no_encontrado)
         end
@@ -108,6 +120,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           SELECT COUNT(*) FROM formato
           WHERE id_formato IN (SELECT id_formato FROM formato WHERE id_formato = $1)
         """
+
         case repo.query(formato_sql, [String.to_integer(id_formato)]) do
           {:ok, %{rows: [[n]]}} when n > 0 -> :ok
           _ -> repo.rollback(:formato_invalido)
@@ -121,39 +134,47 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             $1, $2, $3, $4
           )
         """
+
         case repo.query(insert_sql, [
-          String.to_integer(id_album),
-          String.to_integer(id_formato),
-          Decimal.new(precio),
-          String.to_integer(stock)
-        ]) do
-          {:ok, _}        -> :ok
+               String.to_integer(id_album),
+               String.to_integer(id_formato),
+               Decimal.new(precio),
+               String.to_integer(stock)
+             ]) do
+          {:ok, _} -> :ok
           {:error, reason} -> repo.rollback(reason)
         end
       end)
 
     case result do
       {:ok, _} ->
-        productos    = listar_productos(socket.assigns.filtros)
+        productos = listar_productos(socket.assigns.filtros)
         estadisticas = listar_estadisticas()
         top_artistas = listar_top_artistas()
 
         {:noreply,
          socket
-         |> assign(:productos,    productos)
+         |> assign(:productos, productos)
          |> assign(:estadisticas, estadisticas)
          |> assign(:top_artistas, top_artistas)
          |> assign(:modal, nil)
          |> put_flash(:info, "Producto creado correctamente.")}
 
       {:error, :album_no_encontrado} ->
-        {:noreply, put_flash(socket, :error, "El álbum indicado no existe. Operación revertida (ROLLBACK).")}
+        {:noreply,
+         put_flash(socket, :error, "El álbum indicado no existe. Operación revertida (ROLLBACK).")}
 
       {:error, :formato_invalido} ->
-        {:noreply, put_flash(socket, :error, "El formato indicado no es válido. Operación revertida (ROLLBACK).")}
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           "El formato indicado no es válido. Operación revertida (ROLLBACK)."
+         )}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Error al crear el producto. Operación revertida (ROLLBACK).")}
+        {:noreply,
+         put_flash(socket, :error, "Error al crear el producto. Operación revertida (ROLLBACK).")}
     end
   end
 
@@ -161,20 +182,21 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   def handle_event("actualizar_producto", params, socket) do
     %{"_id" => id, "precio" => precio, "stock" => stock} = params
 
-    result = Repo.query(
-      "UPDATE producto SET precio = $1, stock = $2 WHERE id_producto = $3",
-      [Decimal.new(precio), String.to_integer(stock), String.to_integer(id)]
-    )
+    result =
+      Repo.query(
+        "UPDATE producto SET precio = $1, stock = $2 WHERE id_producto = $3",
+        [Decimal.new(precio), String.to_integer(stock), String.to_integer(id)]
+      )
 
     case result do
       {:ok, _} ->
-        productos    = listar_productos(socket.assigns.filtros)
+        productos = listar_productos(socket.assigns.filtros)
         estadisticas = listar_estadisticas()
         top_artistas = listar_top_artistas()
 
         {:noreply,
          socket
-         |> assign(:productos,    productos)
+         |> assign(:productos, productos)
          |> assign(:estadisticas, estadisticas)
          |> assign(:top_artistas, top_artistas)
          |> assign(:modal, nil)
@@ -188,13 +210,13 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   # ── Eliminar producto ─────────────────────────
   def handle_event("eliminar_producto", %{"id" => id}, socket) do
     Repo.query("DELETE FROM producto WHERE id_producto = $1", [String.to_integer(id)])
-    productos    = listar_productos(socket.assigns.filtros)
+    productos = listar_productos(socket.assigns.filtros)
     estadisticas = listar_estadisticas()
     top_artistas = listar_top_artistas()
 
     {:noreply,
      socket
-     |> assign(:productos,    productos)
+     |> assign(:productos, productos)
      |> assign(:estadisticas, estadisticas)
      |> assign(:top_artistas, top_artistas)
      |> put_flash(:info, "Producto eliminado.")}
@@ -206,27 +228,30 @@ defmodule TiendaAlbumesWeb.InventarioLive do
 
   # ── 0. Crear VIEW automáticamente si no existe ───────────────────────────────
   defp crear_view_si_no_existe do
-    Repo.query("""
-      CREATE OR REPLACE VIEW vista_productos_completa AS
-      SELECT
-        p.id_producto,
-        al.titulo,
-        ar.nombre          AS artista,
-        ar.id_artista,
-        f.nombre           AS formato,
-        f.id_formato,
-        g.nombre           AS genero,
-        g.id_genero,
-        p.precio,
-        p.stock,
-        al.anio_lanzamiento
-      FROM producto p
-      JOIN album   al ON p.id_album    = al.id_album
-      JOIN artista ar ON al.id_artista = ar.id_artista
-      JOIN formato f  ON p.id_formato  = f.id_formato
-      LEFT JOIN album_genero ag ON al.id_album  = ag.id_album
-      LEFT JOIN genero g        ON ag.id_genero = g.id_genero
-    """, [])
+    Repo.query(
+      """
+        CREATE OR REPLACE VIEW vista_productos_completa AS
+        SELECT
+          p.id_producto,
+          al.titulo,
+          ar.nombre          AS artista,
+          ar.id_artista,
+          f.nombre           AS formato,
+          f.id_formato,
+          g.nombre           AS genero,
+          g.id_genero,
+          p.precio,
+          p.stock,
+          al.anio_lanzamiento
+        FROM producto p
+        JOIN album   al ON p.id_album    = al.id_album
+        JOIN artista ar ON al.id_artista = ar.id_artista
+        JOIN formato f  ON p.id_formato  = f.id_formato
+        LEFT JOIN album_genero ag ON al.id_album  = ag.id_album
+        LEFT JOIN genero g        ON ag.id_genero = g.id_genero
+      """,
+      []
+    )
   end
 
   # ── 1. Listar productos ───────────────────────
@@ -235,27 +260,25 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   # Además aplica un subquery correlacionado para filtrar por stock mínimo del artista
   # cuando se filtra por artista (requisito: subquery).
   defp listar_productos(filtros) do
-    conditions_view     = []
+    conditions_view = []
     conditions_fallback = []
-    params              = []
-    idx                 = [1]
+    params = []
+    idx = [1]
 
     {conditions_view, conditions_fallback, params, idx} =
       if filtros["formato"] != "" && filtros["formato"] do
-        {conditions_view     ++ ["id_formato = $#{hd(idx)}"],
+        {conditions_view ++ ["id_formato = $#{hd(idx)}"],
          conditions_fallback ++ ["p.id_formato = $#{hd(idx)}"],
-         params ++ [String.to_integer(filtros["formato"])],
-         [hd(idx) + 1]}
+         params ++ [String.to_integer(filtros["formato"])], [hd(idx) + 1]}
       else
         {conditions_view, conditions_fallback, params, idx}
       end
 
     {conditions_view, conditions_fallback, params, idx} =
       if filtros["genero"] != "" && filtros["genero"] do
-        {conditions_view     ++ ["id_genero = $#{hd(idx)}"],
+        {conditions_view ++ ["id_genero = $#{hd(idx)}"],
          conditions_fallback ++ ["g.id_genero = $#{hd(idx)}"],
-         params ++ [String.to_integer(filtros["genero"])],
-         [hd(idx) + 1]}
+         params ++ [String.to_integer(filtros["genero"])], [hd(idx) + 1]}
       else
         {conditions_view, conditions_fallback, params, idx}
       end
@@ -264,12 +287,14 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     # Requisito: consulta con subquery (IN)
     {conditions_view, conditions_fallback, params, idx} =
       if filtros["artista"] != "" && filtros["artista"] do
-        subq = "id_producto IN (SELECT p2.id_producto FROM producto p2 JOIN album al2 ON p2.id_album = al2.id_album WHERE al2.id_artista = $#{hd(idx)})"
-        subq_fb = "p.id_producto IN (SELECT p2.id_producto FROM producto p2 JOIN album al2 ON p2.id_album = al2.id_album WHERE al2.id_artista = $#{hd(idx)})"
-        {conditions_view     ++ [subq],
-         conditions_fallback ++ [subq_fb],
-         params ++ [String.to_integer(filtros["artista"])],
-         [hd(idx) + 1]}
+        subq =
+          "id_producto IN (SELECT p2.id_producto FROM producto p2 JOIN album al2 ON p2.id_album = al2.id_album WHERE al2.id_artista = $#{hd(idx)})"
+
+        subq_fb =
+          "p.id_producto IN (SELECT p2.id_producto FROM producto p2 JOIN album al2 ON p2.id_album = al2.id_album WHERE al2.id_artista = $#{hd(idx)})"
+
+        {conditions_view ++ [subq], conditions_fallback ++ [subq_fb],
+         params ++ [String.to_integer(filtros["artista"])], [hd(idx) + 1]}
       else
         {conditions_view, conditions_fallback, params, idx}
       end
@@ -278,28 +303,28 @@ defmodule TiendaAlbumesWeb.InventarioLive do
       case filtros["stock"] do
         "disponible" ->
           {conditions_view ++ ["stock > 0"], conditions_fallback ++ ["p.stock > 0"], params, idx}
+
         "agotado" ->
           {conditions_view ++ ["stock = 0"], conditions_fallback ++ ["p.stock = 0"], params, idx}
+
         _ ->
           {conditions_view, conditions_fallback, params, idx}
       end
 
     {conditions_view, conditions_fallback, params, idx} =
       if filtros["precio_min"] != "" && filtros["precio_min"] do
-        {conditions_view     ++ ["precio >= $#{hd(idx)}"],
+        {conditions_view ++ ["precio >= $#{hd(idx)}"],
          conditions_fallback ++ ["p.precio >= $#{hd(idx)}"],
-         params ++ [Decimal.new(filtros["precio_min"])],
-         [hd(idx) + 1]}
+         params ++ [Decimal.new(filtros["precio_min"])], [hd(idx) + 1]}
       else
         {conditions_view, conditions_fallback, params, idx}
       end
 
     {conditions_view, conditions_fallback, params, _idx} =
       if filtros["precio_max"] != "" && filtros["precio_max"] do
-        {conditions_view     ++ ["precio <= $#{hd(idx)}"],
+        {conditions_view ++ ["precio <= $#{hd(idx)}"],
          conditions_fallback ++ ["p.precio <= $#{hd(idx)}"],
-         params ++ [Decimal.new(filtros["precio_max"])],
-         [hd(idx) + 1]}
+         params ++ [Decimal.new(filtros["precio_max"])], [hd(idx) + 1]}
       else
         {conditions_view, conditions_fallback, params, idx}
       end
@@ -308,7 +333,9 @@ defmodule TiendaAlbumesWeb.InventarioLive do
       if conditions_view == [], do: "", else: "WHERE " <> Enum.join(conditions_view, " AND ")
 
     where_fallback =
-      if conditions_fallback == [], do: "", else: "WHERE " <> Enum.join(conditions_fallback, " AND ")
+      if conditions_fallback == [],
+        do: "",
+        else: "WHERE " <> Enum.join(conditions_fallback, " AND ")
 
     # Consulta principal sobre el VIEW (satisface requisito VIEW + JOIN en el VIEW)
     sql = """
@@ -323,9 +350,18 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     case Repo.query(sql, params) do
       {:ok, result} ->
         Enum.map(result.rows, fn [id, titulo, artista, formato, genero, precio, stock, anio] ->
-          %{id: id, titulo: titulo, artista: artista, formato: formato,
-            genero: genero || "—", precio: precio, stock: stock, anio: anio}
+          %{
+            id: id,
+            titulo: titulo,
+            artista: artista,
+            formato: formato,
+            genero: genero || "—",
+            precio: precio,
+            stock: stock,
+            anio: anio
+          }
         end)
+
       {:error, _} ->
         # Fallback: query directa con JOINs si el VIEW aún no está disponible
         fallback_sql = """
@@ -347,13 +383,24 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           #{where_fallback}
           ORDER BY al.titulo, f.nombre
         """
+
         case Repo.query(fallback_sql, params) do
           {:ok, result} ->
             Enum.map(result.rows, fn [id, titulo, artista, formato, genero, precio, stock, anio] ->
-              %{id: id, titulo: titulo, artista: artista, formato: formato,
-                genero: genero || "—", precio: precio, stock: stock, anio: anio}
+              %{
+                id: id,
+                titulo: titulo,
+                artista: artista,
+                formato: formato,
+                genero: genero || "—",
+                precio: precio,
+                stock: stock,
+                anio: anio
+              }
             end)
-          {:error, _} -> []
+
+          {:error, _} ->
+            []
         end
     end
   end
@@ -393,10 +440,19 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     case Repo.query(sql, []) do
       {:ok, result} ->
         Enum.map(result.rows, fn [fmt, total, stock, avg, min_p, max_p, valor] ->
-          %{formato: fmt, total: total, stock: stock,
-            promedio: avg, minimo: min_p, maximo: max_p, valor: valor}
+          %{
+            formato: fmt,
+            total: total,
+            stock: stock,
+            promedio: avg,
+            minimo: min_p,
+            maximo: max_p,
+            valor: valor
+          }
         end)
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
@@ -431,10 +487,18 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     case Repo.query(sql, []) do
       {:ok, result} ->
         Enum.map(result.rows, fn [artista, albumes, productos, stock, promedio, album_caro] ->
-          %{artista: artista, albumes: albumes, productos: productos,
-            stock: stock, promedio: promedio, album_caro: album_caro || "—"}
+          %{
+            artista: artista,
+            albumes: albumes,
+            productos: productos,
+            stock: stock,
+            promedio: promedio,
+            album_caro: album_caro || "—"
+          }
         end)
-      {:error, _} -> []
+
+      {:error, _} ->
+        []
     end
   end
 
@@ -475,9 +539,17 @@ defmodule TiendaAlbumesWeb.InventarioLive do
 
     case Repo.query(sql, [id]) do
       {:ok, %{rows: [[id, id_album, id_formato, precio, stock, titulo, formato, artista]]}} ->
-        %{id: id, id_album: id_album, id_formato: id_formato,
-          precio: precio, stock: stock, titulo: titulo,
-          formato: formato, artista: artista}
+        %{
+          id: id,
+          id_album: id_album,
+          id_formato: id_formato,
+          precio: precio,
+          stock: stock,
+          titulo: titulo,
+          formato: formato,
+          artista: artista
+        }
+
       _ ->
         nil
     end
@@ -491,36 +563,51 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-
       <%!-- ENCABEZADO + TABS --%>
       <div class="mb-6 flex items-center justify-between">
         <div>
-          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d;">Gestión</p>
-          <h1 style="font-family: Georgia, serif; font-size: 1.8rem; font-weight: 700; color: #385404;">Inventario</h1>
+          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d;">
+            Gestión
+          </p>
+          <h1 style="font-family: Georgia, serif; font-size: 1.8rem; font-weight: 700; color: #385404;">
+            Inventario
+          </h1>
         </div>
         <div class="flex gap-2">
           <button
-            phx-click="cambiar_vista" phx-value-vista="inventario"
+            phx-click="cambiar_vista"
+            phx-value-vista="inventario"
             class="btn btn-sm"
-            style={if @vista_activa == :inventario,
-              do:   "background-color: #385404; color: #f7fbf6; border: none;",
-              else: "background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"}>
+            style={
+              if @vista_activa == :inventario,
+                do: "background-color: #385404; color: #f7fbf6; border: none;",
+                else: "background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+            }
+          >
             Productos
           </button>
           <button
-            phx-click="cambiar_vista" phx-value-vista="estadisticas"
+            phx-click="cambiar_vista"
+            phx-value-vista="estadisticas"
             class="btn btn-sm"
-            style={if @vista_activa == :estadisticas,
-              do:   "background-color: #385404; color: #f7fbf6; border: none;",
-              else: "background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"}>
+            style={
+              if @vista_activa == :estadisticas,
+                do: "background-color: #385404; color: #f7fbf6; border: none;",
+                else: "background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+            }
+          >
             Estadísticas
           </button>
           <button
-            phx-click="cambiar_vista" phx-value-vista="artistas"
+            phx-click="cambiar_vista"
+            phx-value-vista="artistas"
             class="btn btn-sm"
-            style={if @vista_activa == :artistas,
-              do:   "background-color: #385404; color: #f7fbf6; border: none;",
-              else: "background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"}>
+            style={
+              if @vista_activa == :artistas,
+                do: "background-color: #385404; color: #f7fbf6; border: none;",
+                else: "background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+            }
+          >
             Top Artistas
           </button>
           <%= if @vista_activa == :inventario do %>
@@ -531,15 +618,22 @@ defmodule TiendaAlbumesWeb.InventarioLive do
 
       <%!-- ════════════════════════════════════ VISTA INVENTARIO ═════════════════════════════ --%>
       <%= if @vista_activa == :inventario do %>
-
         <%!-- FILTROS --%>
-        <form phx-change="filtrar" phx-submit="filtrar"
-              class="rounded-box border p-4 mb-6 grid grid-cols-6 gap-3"
-              style="background-color: #f1f5eb; border-color: #c8d4a0;">
-
+        <form
+          phx-change="filtrar"
+          phx-submit="filtrar"
+          class="rounded-box border p-4 mb-6 grid grid-cols-6 gap-3"
+          style="background-color: #f1f5eb; border-color: #c8d4a0;"
+        >
           <div>
-            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Formato</label>
-            <select name="formato" class="select select-sm w-full" style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;">
+            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+              Formato
+            </label>
+            <select
+              name="formato"
+              class="select select-sm w-full"
+              style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+            >
               <option value="">Todos</option>
               <option value="1" selected={@filtros["formato"] == "1"}>Vinilo</option>
               <option value="2" selected={@filtros["formato"] == "2"}>CD</option>
@@ -547,8 +641,14 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           </div>
 
           <div>
-            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Género</label>
-            <select name="genero" class="select select-sm w-full" style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;">
+            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+              Género
+            </label>
+            <select
+              name="genero"
+              class="select select-sm w-full"
+              style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+            >
               <option value="">Todos</option>
               <%= for {nombre, id} <- @generos do %>
                 <option value={id} selected={@filtros["genero"] == to_string(id)}>{nombre}</option>
@@ -557,8 +657,14 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           </div>
 
           <div>
-            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Artista</label>
-            <select name="artista" class="select select-sm w-full" style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;">
+            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+              Artista
+            </label>
+            <select
+              name="artista"
+              class="select select-sm w-full"
+              style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+            >
               <option value="">Todos</option>
               <%= for {nombre, id} <- @artistas do %>
                 <option value={id} selected={@filtros["artista"] == to_string(id)}>{nombre}</option>
@@ -567,29 +673,59 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           </div>
 
           <div>
-            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Stock</label>
-            <select name="stock" class="select select-sm w-full" style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;">
+            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+              Stock
+            </label>
+            <select
+              name="stock"
+              class="select select-sm w-full"
+              style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+            >
               <option value="">Todos</option>
-              <option value="disponible" selected={@filtros["stock"] == "disponible"}>Disponible</option>
-              <option value="agotado"    selected={@filtros["stock"] == "agotado"}>Agotado</option>
+              <option value="disponible" selected={@filtros["stock"] == "disponible"}>
+                Disponible
+              </option>
+              <option value="agotado" selected={@filtros["stock"] == "agotado"}>Agotado</option>
             </select>
           </div>
 
           <div>
-            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Precio mín.</label>
-            <input type="number" name="precio_min" value={@filtros["precio_min"]} step="0.01" placeholder="0.00"
-              class="input input-sm w-full" style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;" />
+            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+              Precio mín.
+            </label>
+            <input
+              type="number"
+              name="precio_min"
+              value={@filtros["precio_min"]}
+              step="0.01"
+              placeholder="0.00"
+              class="input input-sm w-full"
+              style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+            />
           </div>
 
           <div>
-            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Precio máx.</label>
-            <input type="number" name="precio_max" value={@filtros["precio_max"]} step="0.01" placeholder="999.00"
-              class="input input-sm w-full" style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;" />
+            <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+              Precio máx.
+            </label>
+            <input
+              type="number"
+              name="precio_max"
+              value={@filtros["precio_max"]}
+              step="0.01"
+              placeholder="999.00"
+              class="input input-sm w-full"
+              style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+            />
           </div>
 
           <div class="col-span-6 flex justify-end">
-            <button type="button" phx-click="limpiar_filtros" class="btn btn-sm"
-              style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">
+            <button
+              type="button"
+              phx-click="limpiar_filtros"
+              class="btn btn-sm"
+              style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+            >
               Limpiar filtros
             </button>
           </div>
@@ -597,8 +733,10 @@ defmodule TiendaAlbumesWeb.InventarioLive do
 
         <%!-- TABLA PRODUCTOS --%>
         <div class="rounded-box border overflow-hidden" style="border-color: #c8d4a0;">
-          <div class="flex items-center justify-between px-4 py-3"
-               style="background-color: #f1f5eb; border-bottom: 1px solid #c8d4a0;">
+          <div
+            class="flex items-center justify-between px-4 py-3"
+            style="background-color: #f1f5eb; border-bottom: 1px solid #c8d4a0;"
+          >
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">
               {length(@productos)} productos encontrados
             </p>
@@ -611,7 +749,9 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             <thead style="background-color: #f1f5eb;">
               <tr>
                 <%= for col <- ~w(# Álbum Artista Año Género Formato Precio Stock Acciones) do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; font-weight: 600; border-bottom: 1px solid #c8d4a0;">{col}</th>
+                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; font-weight: 600; border-bottom: 1px solid #c8d4a0;">
+                    {col}
+                  </th>
                 <% end %>
               </tr>
             </thead>
@@ -619,37 +759,51 @@ defmodule TiendaAlbumesWeb.InventarioLive do
               <%= for p <- @productos do %>
                 <tr style="border-bottom: 1px solid #e2e8d5;">
                   <td style="color: #97a77d; font-size: 12px;">{p.id}</td>
-                  <td style="font-family: Georgia, serif; font-weight: 600; color: #385404; font-size: 13px;">{p.titulo}</td>
+                  <td style="font-family: Georgia, serif; font-weight: 600; color: #385404; font-size: 13px;">
+                    {p.titulo}
+                  </td>
                   <td style="color: #6a7a54; font-size: 12px;">{p.artista}</td>
                   <td style="color: #97a77d; font-size: 12px;">{p.anio}</td>
                   <td style="font-size: 12px; color: #6a7a54;">{p.genero}</td>
                   <td>
-                    <span class="badge badge-sm"
-                      style={if p.formato == "Vinilo",
-                        do:   "background-color: #2a3a1a; color: #b8c280; border: none;",
-                        else: "background-color: #e2e8d5; color: #385404; border: none;"}>
+                    <span
+                      class="badge badge-sm"
+                      style={
+                        if p.formato == "Vinilo",
+                          do: "background-color: #2a3a1a; color: #b8c280; border: none;",
+                          else: "background-color: #e2e8d5; color: #385404; border: none;"
+                      }
+                    >
                       {p.formato}
                     </span>
                   </td>
                   <td style="font-weight: 600; color: #385404; font-size: 13px;">${p.precio}</td>
                   <td>
-                    <span style={if p.stock > 0,
-                      do:   "color: #4a7a2a; font-weight: 600; font-size: 12px;",
-                      else: "color: #a33a2a; font-weight: 600; font-size: 12px;"}>
+                    <span style={
+                      if p.stock > 0,
+                        do: "color: #4a7a2a; font-weight: 600; font-size: 12px;",
+                        else: "color: #a33a2a; font-weight: 600; font-size: 12px;"
+                    }>
                       {p.stock}
                     </span>
                   </td>
                   <td>
                     <div class="flex gap-2">
-                      <button phx-click="editar_producto" phx-value-id={p.id}
+                      <button
+                        phx-click="editar_producto"
+                        phx-value-id={p.id}
                         class="btn btn-xs"
-                        style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">
+                        style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+                      >
                         Editar
                       </button>
-                      <button phx-click="eliminar_producto" phx-value-id={p.id}
+                      <button
+                        phx-click="eliminar_producto"
+                        phx-value-id={p.id}
                         data-confirm="¿Eliminar este producto?"
                         class="btn btn-xs"
-                        style="background-color: #f8e8e5; border-color: #e8c8c0; color: #a33a2a;">
+                        style="background-color: #f8e8e5; border-color: #e8c8c0; color: #a33a2a;"
+                      >
                         Eliminar
                       </button>
                     </div>
@@ -659,13 +813,11 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             </tbody>
           </table>
         </div>
-
       <% end %>
 
       <%!-- ════════════════════════════════════ VISTA ESTADÍSTICAS ═══════════════════════════ --%>
       <%!-- GROUP BY + HAVING + agregación + CTE (WITH) visibles en la UI --%>
       <%= if @vista_activa == :estadisticas do %>
-
         <div class="rounded-box border overflow-hidden mb-6" style="border-color: #c8d4a0;">
           <div class="px-4 py-3" style="background-color: #f1f5eb; border-bottom: 1px solid #c8d4a0;">
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">
@@ -680,7 +832,9 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             <thead style="background-color: #f1f5eb;">
               <tr>
                 <%= for col <- ["Formato", "Productos", "Stock Total", "Precio Promedio", "Precio Mín.", "Precio Máx.", "Valor Inventario"] do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; font-weight: 600; border-bottom: 1px solid #c8d4a0;">{col}</th>
+                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; font-weight: 600; border-bottom: 1px solid #c8d4a0;">
+                    {col}
+                  </th>
                 <% end %>
               </tr>
             </thead>
@@ -688,10 +842,14 @@ defmodule TiendaAlbumesWeb.InventarioLive do
               <%= for e <- @estadisticas do %>
                 <tr style="border-bottom: 1px solid #e2e8d5;">
                   <td>
-                    <span class="badge badge-sm"
-                      style={if e.formato == "Vinilo",
-                        do:   "background-color: #2a3a1a; color: #b8c280; border: none;",
-                        else: "background-color: #e2e8d5; color: #385404; border: none;"}>
+                    <span
+                      class="badge badge-sm"
+                      style={
+                        if e.formato == "Vinilo",
+                          do: "background-color: #2a3a1a; color: #b8c280; border: none;",
+                          else: "background-color: #e2e8d5; color: #385404; border: none;"
+                      }
+                    >
                       {e.formato}
                     </span>
                   </td>
@@ -716,33 +874,40 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           <%= if length(@estadisticas) > 0 do %>
             <div class="flex gap-8 flex-wrap">
               <div>
-                <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">Total productos</p>
+                <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">
+                  Total productos
+                </p>
                 <p style="font-size: 1.4rem; font-weight: 700; color: #385404; font-family: Georgia, serif;">
                   {@estadisticas |> Enum.map(& &1.total) |> Enum.sum()}
                 </p>
               </div>
               <div>
-                <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">Stock global</p>
+                <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">
+                  Stock global
+                </p>
                 <p style="font-size: 1.4rem; font-weight: 700; color: #385404; font-family: Georgia, serif;">
                   {@estadisticas |> Enum.map(& &1.stock) |> Enum.sum()}
                 </p>
               </div>
               <div>
-                <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">Valor total inventario</p>
+                <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">
+                  Valor total inventario
+                </p>
                 <p style="font-size: 1.4rem; font-weight: 700; color: #385404; font-family: Georgia, serif;">
-                  ${ @estadisticas |> Enum.map(& Decimal.to_float(&1.valor)) |> Enum.sum() |> :erlang.float_to_binary([decimals: 2]) }
+                  ${@estadisticas
+                  |> Enum.map(&Decimal.to_float(&1.valor))
+                  |> Enum.sum()
+                  |> :erlang.float_to_binary(decimals: 2)}
                 </p>
               </div>
             </div>
           <% end %>
         </div>
-
       <% end %>
 
       <%!-- ════════════════════════════════════ VISTA TOP ARTISTAS ══════════════════════════ --%>
       <%!-- GROUP BY + HAVING + subquery correlacionado visible en la UI --%>
       <%= if @vista_activa == :artistas do %>
-
         <div class="rounded-box border overflow-hidden" style="border-color: #c8d4a0;">
           <div class="px-4 py-3" style="background-color: #f1f5eb; border-bottom: 1px solid #c8d4a0;">
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">
@@ -757,14 +922,18 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             <thead style="background-color: #f1f5eb;">
               <tr>
                 <%= for col <- ["Artista", "Álbumes", "Productos", "Stock", "Precio Promedio", "Álbum más caro"] do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; font-weight: 600; border-bottom: 1px solid #c8d4a0;">{col}</th>
+                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; font-weight: 600; border-bottom: 1px solid #c8d4a0;">
+                    {col}
+                  </th>
                 <% end %>
               </tr>
             </thead>
             <tbody>
               <%= for a <- @top_artistas do %>
                 <tr style="border-bottom: 1px solid #e2e8d5;">
-                  <td style="font-family: Georgia, serif; font-weight: 600; color: #385404; font-size: 13px;">{a.artista}</td>
+                  <td style="font-family: Georgia, serif; font-weight: 600; color: #385404; font-size: 13px;">
+                    {a.artista}
+                  </td>
                   <td style="color: #6a7a54; font-size: 12px;">{a.albumes}</td>
                   <td style="color: #385404; font-weight: 600; font-size: 13px;">{a.productos}</td>
                   <td style="color: #6a7a54; font-size: 12px;">{a.stock}</td>
@@ -775,15 +944,18 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             </tbody>
           </table>
         </div>
-
       <% end %>
 
       <%!-- ══════════════════════════════════ MODAL NUEVO PRODUCTO ══════════════════════════ --%>
       <%= if @modal == :nuevo do %>
-        <div class="fixed inset-0 flex items-center justify-center z-50"
-             style="background-color: rgba(42,58,26,0.4);">
-          <div class="rounded-box border p-6 w-full max-w-md"
-               style="background-color: #f7fbf6; border-color: #c8d4a0;">
+        <div
+          class="fixed inset-0 flex items-center justify-center z-50"
+          style="background-color: rgba(42,58,26,0.4);"
+        >
+          <div
+            class="rounded-box border p-6 w-full max-w-md"
+            style="background-color: #f7fbf6; border-color: #c8d4a0;"
+          >
             <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: #385404; margin-bottom: 4px;">
               Nuevo Producto
             </h2>
@@ -793,34 +965,62 @@ defmodule TiendaAlbumesWeb.InventarioLive do
 
             <form phx-submit="guardar_producto">
               <div class="mb-3">
-                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Álbum (ID)</label>
-                <input type="number" name="id_album" required
+                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                  Álbum (ID)
+                </label>
+                <input
+                  type="number"
+                  name="id_album"
+                  required
                   class="input input-sm w-full"
-                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;" />
+                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                />
               </div>
               <div class="mb-3">
-                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Formato</label>
-                <select name="id_formato" class="select select-sm w-full"
-                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;">
+                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                  Formato
+                </label>
+                <select
+                  name="id_formato"
+                  class="select select-sm w-full"
+                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                >
                   <option value="1">Vinilo</option>
                   <option value="2">CD</option>
                 </select>
               </div>
               <div class="mb-3">
-                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Precio</label>
-                <input type="number" name="precio" step="0.01" required
+                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                  Precio
+                </label>
+                <input
+                  type="number"
+                  name="precio"
+                  step="0.01"
+                  required
                   class="input input-sm w-full"
-                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;" />
+                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                />
               </div>
               <div class="mb-5">
-                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Stock</label>
-                <input type="number" name="stock" required
+                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                  Stock
+                </label>
+                <input
+                  type="number"
+                  name="stock"
+                  required
                   class="input input-sm w-full"
-                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;" />
+                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                />
               </div>
               <div class="flex gap-3 justify-end">
-                <button type="button" phx-click="cerrar_modal" class="btn btn-sm"
-                  style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">
+                <button
+                  type="button"
+                  phx-click="cerrar_modal"
+                  class="btn btn-sm"
+                  style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+                >
                   Cancelar
                 </button>
                 <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
@@ -833,10 +1033,14 @@ defmodule TiendaAlbumesWeb.InventarioLive do
       <%!-- ══════════════════════════════════ MODAL EDITAR PRODUCTO ═════════════════════════ --%>
       <%!-- obtener_producto usa JOIN entre 4 tablas (requisito JOIN múltiples tablas) --%>
       <%= if @modal == :editar && @producto_editando do %>
-        <div class="fixed inset-0 flex items-center justify-center z-50"
-             style="background-color: rgba(42,58,26,0.4);">
-          <div class="rounded-box border p-6 w-full max-w-md"
-               style="background-color: #f7fbf6; border-color: #c8d4a0;">
+        <div
+          class="fixed inset-0 flex items-center justify-center z-50"
+          style="background-color: rgba(42,58,26,0.4);"
+        >
+          <div
+            class="rounded-box border p-6 w-full max-w-md"
+            style="background-color: #f7fbf6; border-color: #c8d4a0;"
+          >
             <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: #385404; margin-bottom: 4px;">
               Editar Producto
             </h2>
@@ -847,20 +1051,39 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             <form phx-submit="actualizar_producto">
               <input type="hidden" name="_id" value={@producto_editando.id} />
               <div class="mb-3">
-                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Precio</label>
-                <input type="number" name="precio" step="0.01" value={@producto_editando.precio} required
+                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                  Precio
+                </label>
+                <input
+                  type="number"
+                  name="precio"
+                  step="0.01"
+                  value={@producto_editando.precio}
+                  required
                   class="input input-sm w-full"
-                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;" />
+                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                />
               </div>
               <div class="mb-5">
-                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">Stock</label>
-                <input type="number" name="stock" value={@producto_editando.stock} required
+                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                  Stock
+                </label>
+                <input
+                  type="number"
+                  name="stock"
+                  value={@producto_editando.stock}
+                  required
                   class="input input-sm w-full"
-                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;" />
+                  style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                />
               </div>
               <div class="flex gap-3 justify-end">
-                <button type="button" phx-click="cerrar_modal" class="btn btn-sm"
-                  style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">
+                <button
+                  type="button"
+                  phx-click="cerrar_modal"
+                  class="btn btn-sm"
+                  style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+                >
                   Cancelar
                 </button>
                 <button type="submit" class="btn btn-primary btn-sm">Actualizar</button>
@@ -869,7 +1092,6 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           </div>
         </div>
       <% end %>
-
     </Layouts.app>
     """
   end
