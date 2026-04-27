@@ -200,8 +200,9 @@ defmodule TiendaAlbumesWeb.VentasLive do
 
     {conditions, params, idx} =
       if filtros["fecha_desde"] && filtros["fecha_desde"] != "" do
+        {:ok, fecha} = Date.from_iso8601(filtros["fecha_desde"])
         {conditions ++ ["co.fecha >= $#{hd(idx)}"],
-         params ++ [filtros["fecha_desde"]],
+         params ++ [fecha],
          [hd(idx) + 1]}
       else
         {conditions, params, idx}
@@ -209,8 +210,9 @@ defmodule TiendaAlbumesWeb.VentasLive do
 
     {conditions, params, _idx} =
       if filtros["fecha_hasta"] && filtros["fecha_hasta"] != "" do
+        {:ok, fecha} = Date.from_iso8601(filtros["fecha_hasta"])
         {conditions ++ ["co.fecha <= $#{hd(idx)}"],
-         params ++ [filtros["fecha_hasta"]],
+         params ++ [fecha],
          [hd(idx) + 1]}
       else
         {conditions, params, idx}
@@ -330,25 +332,6 @@ defmodule TiendaAlbumesWeb.VentasLive do
         </button>
       </div>
 
-      <%!-- BADGE SQL --%>
-      <div class="flex flex-wrap gap-2 mb-5">
-        <span style="font-size: 9px; letter-spacing: 1px; text-transform: uppercase; background-color: #2a3a1a; color: #b8c280; border-radius: 4px; padding: 3px 8px;">
-          JOIN · compra → cliente · empleado · detalle_compra
-        </span>
-        <span style="font-size: 9px; letter-spacing: 1px; text-transform: uppercase; background-color: #2a3a1a; color: #b8c280; border-radius: 4px; padding: 3px 8px;">
-          GROUP BY · SUM() · COUNT()
-        </span>
-        <span style="font-size: 9px; letter-spacing: 1px; text-transform: uppercase; background-color: #2a3a1a; color: #b8c280; border-radius: 4px; padding: 3px 8px;">
-          Subquery IN · stock > 0
-        </span>
-        <span style="font-size: 9px; letter-spacing: 1px; text-transform: uppercase; background-color: #2a3a1a; color: #b8c280; border-radius: 4px; padding: 3px 8px;">
-          Transacción · ROLLBACK automático
-        </span>
-        <span style="font-size: 9px; letter-spacing: 1px; text-transform: uppercase; background-color: #2a3a1a; color: #b8c280; border-radius: 4px; padding: 3px 8px;">
-          EXISTS · validación de stock
-        </span>
-      </div>
-
       <%!-- FILTROS --%>
       <form phx-change="filtrar" phx-submit="filtrar"
             class="rounded-box border p-4 mb-6 grid grid-cols-5 gap-3"
@@ -465,13 +448,6 @@ defmodule TiendaAlbumesWeb.VentasLive do
                 style="color: #97a77d;">✕</button>
             </div>
 
-            <%!-- Badge SQL del detalle --%>
-            <div class="mb-3">
-              <span style="font-size: 9px; letter-spacing: 1px; text-transform: uppercase; background-color: #2a3a1a; color: #b8c280; border-radius: 4px; padding: 3px 8px;">
-                JOIN · detalle_compra → producto → album → artista → formato (5 tablas)
-              </span>
-            </div>
-
             <%!-- Tabla de ítems --%>
             <table class="table table-sm w-full mb-4" style="background-color: #f7fbf6;">
               <thead style="background-color: #f1f5eb;">
@@ -531,7 +507,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
               <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: #97a77d;">✕</button>
             </div>
             <p style="font-size: 10px; color: #97a77d; margin-bottom: 16px; font-style: italic;">
-              Transacción explícita · EXISTS valida stock · ROLLBACK si falla · Subquery MAX(id)
+              Registra compra, valida stock y descuenta unidades en una sola transacción
             </p>
 
             <form phx-submit="guardar_venta">
