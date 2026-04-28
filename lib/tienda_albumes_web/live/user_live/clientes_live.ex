@@ -7,10 +7,10 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:clientes,         listar_clientes(%{}))
-     |> assign(:filtros,          %{"nombre" => "", "solo_compradores" => "false"})
-     |> assign(:modal,            nil)
-     |> assign(:cliente_perfil,   nil)
+     |> assign(:clientes, listar_clientes(%{}))
+     |> assign(:filtros, %{"nombre" => "", "solo_compradores" => "false"})
+     |> assign(:modal, nil)
+     |> assign(:cliente_perfil, nil)
      |> assign(:cliente_editando, nil)}
   end
 
@@ -34,9 +34,10 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   # ──────────────────────────────────────────────
 
   def handle_event("ver_perfil", %{"id" => id}, socket) do
-    id_int  = String.to_integer(id)
+    id_int = String.to_integer(id)
     cliente = obtener_cliente(id_int)
     compras = obtener_compras_cliente(id_int)
+
     {:noreply,
      socket
      |> assign(:modal, :perfil)
@@ -61,13 +62,17 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   end
 
   def handle_event("guardar_cliente", params, socket) do
-    result = Repo.query("""
-      INSERT INTO cliente (id_cliente, nombre, email, telefono, direccion)
-      VALUES (
-        (SELECT COALESCE(MAX(id_cliente), 0) + 1 FROM cliente),
-        $1, $2, $3, $4
+    result =
+      Repo.query(
+        """
+          INSERT INTO cliente (id_cliente, nombre, email, telefono, direccion)
+          VALUES (
+            (SELECT COALESCE(MAX(id_cliente), 0) + 1 FROM cliente),
+            $1, $2, $3, $4
+          )
+        """,
+        [params["nombre"], params["email"], params["telefono"], params["direccion"]]
       )
-    """, [params["nombre"], params["email"], params["telefono"], params["direccion"]])
 
     case result do
       {:ok, _} ->
@@ -76,17 +81,29 @@ defmodule TiendaAlbumesWeb.ClientesLive do
          |> assign(:clientes, listar_clientes(socket.assigns.filtros))
          |> assign(:modal, nil)
          |> put_flash(:info, "Cliente creado correctamente.")}
+
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Error al crear el cliente.")}
     end
   end
 
   def handle_event("actualizar_cliente", params, socket) do
-    result = Repo.query("""
-      UPDATE cliente SET nombre = $1, email = $2, telefono = $3, direccion = $4
-      WHERE id_cliente = $5
-    """, [params["nombre"], params["email"], params["telefono"], params["direccion"],
-          String.to_integer(params["id"])])
+    cliente_id = params["_id"] || params["id"]
+
+    result =
+      Repo.query(
+        """
+          UPDATE cliente SET nombre = $1, email = $2, telefono = $3, direccion = $4
+          WHERE id_cliente = $5
+        """,
+        [
+          params["nombre"],
+          params["email"],
+          params["telefono"],
+          params["direccion"],
+          String.to_integer(cliente_id)
+        ]
+      )
 
     case result do
       {:ok, _} ->
@@ -95,6 +112,7 @@ defmodule TiendaAlbumesWeb.ClientesLive do
          |> assign(:clientes, listar_clientes(socket.assigns.filtros))
          |> assign(:modal, nil)
          |> put_flash(:info, "Cliente actualizado.")}
+
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Error al actualizar el cliente.")}
     end
@@ -102,6 +120,7 @@ defmodule TiendaAlbumesWeb.ClientesLive do
 
   def handle_event("eliminar_cliente", %{"id" => id}, socket) do
     Repo.query("DELETE FROM cliente WHERE id_cliente = $1", [String.to_integer(id)])
+
     {:noreply,
      socket
      |> assign(:clientes, listar_clientes(socket.assigns.filtros))
@@ -130,8 +149,10 @@ defmodule TiendaAlbumesWeb.ClientesLive do
         solo_compradores ->
           # Subquery EXISTS: clientes que tienen al menos una compra registrada
           "WHERE EXISTS (SELECT 1 FROM compra co WHERE co.id_cliente = c.id_cliente) #{nombre_cond}"
+
         nombre_cond != "" ->
           "WHERE 1=1 #{nombre_cond}"
+
         true ->
           ""
       end
@@ -156,21 +177,32 @@ defmodule TiendaAlbumesWeb.ClientesLive do
     case Repo.query(sql, []) do
       {:ok, result} ->
         Enum.map(result.rows, fn [id, nombre, email, telefono, dir, compras, total] ->
-          %{id: id, nombre: nombre, email: email, telefono: telefono,
-            direccion: dir, num_compras: compras, total_gastado: total}
+          %{
+            id: id,
+            nombre: nombre,
+            email: email,
+            telefono: telefono,
+            direccion: dir,
+            num_compras: compras,
+            total_gastado: total
+          }
         end)
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
   defp obtener_cliente(id) do
     case Repo.query(
-      "SELECT id_cliente, nombre, email, telefono, direccion FROM cliente WHERE id_cliente = $1",
-      [id]
-    ) do
+           "SELECT id_cliente, nombre, email, telefono, direccion FROM cliente WHERE id_cliente = $1",
+           [id]
+         ) do
       {:ok, %{rows: [[id, nombre, email, telefono, dir]]}} ->
         %{id: id, nombre: nombre, email: email, telefono: telefono, direccion: dir}
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -194,13 +226,22 @@ defmodule TiendaAlbumesWeb.ClientesLive do
       GROUP BY co.id_compra, co.fecha, e.nombre
       ORDER BY co.fecha DESC
     """
+
     case Repo.query(sql, [id_cliente]) do
       {:ok, result} ->
         Enum.map(result.rows, fn [id, fecha, empleado, items, total, albumes] ->
-          %{id: id, fecha: fecha, empleado: empleado, num_items: items,
-            total: total, albumes: albumes || "—"}
+          %{
+            id: id,
+            fecha: fecha,
+            empleado: empleado,
+            num_items: items,
+            total: total,
+            albumes: albumes || "—"
+          }
         end)
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
@@ -212,53 +253,78 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-
       <%!-- ENCABEZADO --%>
       <div class="mb-6 flex items-center justify-between">
         <div>
-          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d;">Directorio</p>
-          <h1 style="font-family: Georgia, serif; font-size: 1.8rem; font-weight: 700; color: #385404;">Clientes</h1>
+          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d;">
+            Directorio
+          </p>
+          <h1 style="font-family: Georgia, serif; font-size: 1.8rem; font-weight: 700; color: #385404;">
+            Clientes
+          </h1>
         </div>
-        <button phx-click="nuevo_cliente" class="btn btn-sm"
-          style="background-color: #385404; color: #f7fbf6; border: none;">
+        <button
+          phx-click="nuevo_cliente"
+          class="btn btn-sm"
+          style="background-color: #385404; color: #f7fbf6; border: none;"
+        >
           + Nuevo Cliente
         </button>
       </div>
 
       <%!-- FILTROS --%>
-      <form phx-change="filtrar" phx-submit="filtrar"
-            class="rounded-box border p-4 mb-6 flex gap-4 items-end"
-            style="background-color: #f1f5eb; border-color: #c8d4a0;">
+      <form
+        phx-change="filtrar"
+        phx-submit="filtrar"
+        class="rounded-box border p-4 mb-6 flex gap-4 items-end"
+        style="background-color: #f1f5eb; border-color: #c8d4a0;"
+      >
         <div class="flex-1">
           <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
             Buscar por nombre
           </label>
-          <input type="text" name="nombre" value={@filtros["nombre"]}
+          <input
+            type="text"
+            name="nombre"
+            value={@filtros["nombre"]}
             placeholder="Nombre del cliente..."
             class="input input-sm w-full"
-            style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;" />
+            style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+          />
         </div>
         <div class="flex items-center gap-2 pb-1">
-          <input type="checkbox" name="solo_compradores" id="solo_compradores"
+          <input
+            type="checkbox"
+            name="solo_compradores"
+            id="solo_compradores"
             value="true"
             checked={@filtros["solo_compradores"] == "true"}
             class="checkbox checkbox-sm"
-            style="border-color: #c8d4a0;" />
-          <label for="solo_compradores"
-            style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; cursor: pointer;">
+            style="border-color: #c8d4a0;"
+          />
+          <label
+            for="solo_compradores"
+            style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; cursor: pointer;"
+          >
             Solo con compras
           </label>
         </div>
-        <button type="button" phx-click="limpiar_filtros" class="btn btn-sm"
-          style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">
+        <button
+          type="button"
+          phx-click="limpiar_filtros"
+          class="btn btn-sm"
+          style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+        >
           Limpiar filtros
         </button>
       </form>
 
       <%!-- TABLA --%>
       <div class="rounded-box border overflow-hidden" style="border-color: #c8d4a0;">
-        <div class="flex items-center justify-between px-4 py-3"
-             style="background-color: #f1f5eb; border-bottom: 1px solid #c8d4a0;">
+        <div
+          class="flex items-center justify-between px-4 py-3"
+          style="background-color: #f1f5eb; border-bottom: 1px solid #c8d4a0;"
+        >
           <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">
             {length(@clientes)} clientes
           </p>
@@ -269,8 +335,10 @@ defmodule TiendaAlbumesWeb.ClientesLive do
         <table class="table table-sm w-full" style="background-color: #f7fbf6;">
           <thead style="background-color: #f1f5eb;">
             <tr>
-              <%= for col <- ~w(# Nombre Email Teléfono Compras Total\ gastado Acciones) do %>
-                <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; font-weight: 600; border-bottom: 1px solid #c8d4a0;">{col}</th>
+              <%= for col <- ["#", "Nombre", "Email", "Teléfono", "Compras", "Total gastado", "Acciones"] do %>
+                <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; font-weight: 600; border-bottom: 1px solid #c8d4a0;">
+                  {col}
+                </th>
               <% end %>
             </tr>
           </thead>
@@ -278,34 +346,49 @@ defmodule TiendaAlbumesWeb.ClientesLive do
             <%= for c <- @clientes do %>
               <tr style="border-bottom: 1px solid #e2e8d5;">
                 <td style="color: #97a77d; font-size: 12px;">{c.id}</td>
-                <td style="font-family: Georgia, serif; font-weight: 600; color: #385404; font-size: 13px;">{c.nombre}</td>
+                <td style="font-family: Georgia, serif; font-weight: 600; color: #385404; font-size: 13px;">
+                  {c.nombre}
+                </td>
                 <td style="color: #6a7a54; font-size: 12px;">{c.email || "—"}</td>
                 <td style="color: #6a7a54; font-size: 12px;">{c.telefono || "—"}</td>
                 <td>
-                  <span class="badge badge-sm"
-                    style={if c.num_compras > 0,
-                      do:   "background-color: #2a3a1a; color: #b8c280; border: none;",
-                      else: "background-color: #e2e8d5; color: #97a77d; border: none;"}>
+                  <span
+                    class="badge badge-sm"
+                    style={
+                      if c.num_compras > 0,
+                        do: "background-color: #2a3a1a; color: #b8c280; border: none;",
+                        else: "background-color: #e2e8d5; color: #97a77d; border: none;"
+                    }
+                  >
                     {c.num_compras} compra(s)
                   </span>
                 </td>
                 <td style="font-weight: 700; color: #385404; font-size: 13px;">${c.total_gastado}</td>
                 <td>
                   <div class="flex gap-2">
-                    <button phx-click="ver_perfil" phx-value-id={c.id}
+                    <button
+                      phx-click="ver_perfil"
+                      phx-value-id={c.id}
                       class="btn btn-xs"
-                      style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">
+                      style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+                    >
                       Perfil
                     </button>
-                    <button phx-click="editar_cliente" phx-value-id={c.id}
+                    <button
+                      phx-click="editar_cliente"
+                      phx-value-id={c.id}
                       class="btn btn-xs"
-                      style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">
+                      style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+                    >
                       Editar
                     </button>
-                    <button phx-click="eliminar_cliente" phx-value-id={c.id}
+                    <button
+                      phx-click="eliminar_cliente"
+                      phx-value-id={c.id}
                       data-confirm="¿Eliminar este cliente?"
                       class="btn btn-xs"
-                      style="background-color: #f8e8e5; border-color: #e8c8c0; color: #a33a2a;">
+                      style="background-color: #f8e8e5; border-color: #e8c8c0; color: #a33a2a;"
+                    >
                       Eliminar
                     </button>
                   </div>
@@ -318,23 +401,27 @@ defmodule TiendaAlbumesWeb.ClientesLive do
 
       <%!-- MODAL PERFIL --%>
       <%= if @modal == :perfil && @cliente_perfil do %>
-        <div class="fixed inset-0 flex items-center justify-center z-50"
-             style="background-color: rgba(42, 58, 26, 0.35);">
-          <div class="rounded-box border p-6 w-full max-w-2xl shadow-xl overflow-y-auto"
-               style="background-color: #f7fbf6; border-color: #c8d4a0; max-height: 90vh;">
-
+        <div
+          class="fixed inset-0 flex items-center justify-center z-50"
+          style="background-color: rgba(42, 58, 26, 0.35);"
+        >
+          <div
+            class="rounded-box border p-6 w-full max-w-2xl shadow-xl overflow-y-auto"
+            style="background-color: #f7fbf6; border-color: #c8d4a0; max-height: 90vh;"
+          >
             <div class="flex items-start justify-between mb-4">
               <div>
                 <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: #385404;">
                   {@cliente_perfil.cliente && @cliente_perfil.cliente.nombre}
                 </h2>
                 <p style="font-size: 11px; color: #97a77d; margin-top: 2px;">
-                  {@cliente_perfil.cliente && (@cliente_perfil.cliente.email || "Sin email")} ·
-                  {@cliente_perfil.cliente && (@cliente_perfil.cliente.telefono || "Sin teléfono")}
+                  {@cliente_perfil.cliente && (@cliente_perfil.cliente.email || "Sin email")} · {@cliente_perfil.cliente &&
+                    (@cliente_perfil.cliente.telefono || "Sin teléfono")}
                 </p>
               </div>
-              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost"
-                style="color: #97a77d;">✕</button>
+              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: #97a77d;">
+                ✕
+              </button>
             </div>
 
             <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; border-top: 1px solid #c8d4a0; padding-top: 12px; margin-bottom: 12px;">
@@ -347,8 +434,10 @@ defmodule TiendaAlbumesWeb.ClientesLive do
               </p>
             <% else %>
               <%= for compra <- @cliente_perfil.compras do %>
-                <div class="rounded-box border p-4 mb-3"
-                     style="background-color: #f1f5eb; border-color: #c8d4a0;">
+                <div
+                  class="rounded-box border p-4 mb-3"
+                  style="background-color: #f1f5eb; border-color: #c8d4a0;"
+                >
                   <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-3">
                       <span style="font-size: 11px; color: #97a77d;">Venta #{compra.id}</span>
@@ -357,7 +446,9 @@ defmodule TiendaAlbumesWeb.ClientesLive do
                       </span>
                       <span style="font-size: 11px; color: #97a77d;">· {compra.empleado}</span>
                     </div>
-                    <span style="font-weight: 700; color: #385404; font-size: 13px;">${compra.total}</span>
+                    <span style="font-weight: 700; color: #385404; font-size: 13px;">
+                      ${compra.total}
+                    </span>
                   </div>
                   <p style="font-size: 11px; color: #6a7a54;">
                     <span style="font-weight: 600;">{compra.num_items} producto(s):</span>
@@ -366,38 +457,62 @@ defmodule TiendaAlbumesWeb.ClientesLive do
                 </div>
               <% end %>
             <% end %>
-
           </div>
         </div>
       <% end %>
 
       <%!-- MODAL NUEVO CLIENTE --%>
       <%= if @modal == :nuevo do %>
-        <div class="fixed inset-0 flex items-center justify-center z-50"
-             style="background-color: rgba(42, 58, 26, 0.35);">
-          <div class="rounded-box border p-6 w-full max-w-md shadow-xl"
-               style="background-color: #f7fbf6; border-color: #c8d4a0;">
+        <div
+          class="fixed inset-0 flex items-center justify-center z-50"
+          style="background-color: rgba(42, 58, 26, 0.35);"
+        >
+          <div
+            class="rounded-box border p-6 w-full max-w-md shadow-xl"
+            style="background-color: #f7fbf6; border-color: #c8d4a0;"
+          >
             <div class="flex items-center justify-between mb-5">
               <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: #385404;">
                 Nuevo Cliente
               </h2>
-              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: #97a77d;">✕</button>
+              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: #97a77d;">
+                ✕
+              </button>
             </div>
             <form phx-submit="guardar_cliente">
               <%= for {campo, label, tipo} <- [{"nombre", "Nombre *", "text"}, {"email", "Email", "email"}, {"telefono", "Teléfono", "text"}, {"direccion", "Dirección", "text"}] do %>
                 <div class="mb-3">
-                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">{label}</label>
-                  <input type={tipo} name={campo}
+                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                    {label}
+                  </label>
+                  <input
+                    type={tipo}
+                    name={campo}
                     required={campo == "nombre"}
                     class="input input-sm w-full"
-                    style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;" />
+                    style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                  />
                 </div>
               <% end %>
-              <div class="flex gap-3 justify-end" style="border-top: 1px solid #c8d4a0; padding-top: 14px;">
-                <button type="button" phx-click="cerrar_modal" class="btn btn-sm"
-                  style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">Cancelar</button>
-                <button type="submit" class="btn btn-sm"
-                  style="background-color: #385404; color: #f7fbf6; border: none;">Guardar</button>
+              <div
+                class="flex gap-3 justify-end"
+                style="border-top: 1px solid #c8d4a0; padding-top: 14px;"
+              >
+                <button
+                  type="button"
+                  phx-click="cerrar_modal"
+                  class="btn btn-sm"
+                  style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn-sm"
+                  style="background-color: #385404; color: #f7fbf6; border: none;"
+                >
+                  Guardar
+                </button>
               </div>
             </form>
           </div>
@@ -406,21 +521,27 @@ defmodule TiendaAlbumesWeb.ClientesLive do
 
       <%!-- MODAL EDITAR CLIENTE --%>
       <%= if @modal == :editar && @cliente_editando do %>
-        <div class="fixed inset-0 flex items-center justify-center z-50"
-             style="background-color: rgba(42, 58, 26, 0.35);">
-          <div class="rounded-box border p-6 w-full max-w-md shadow-xl"
-               style="background-color: #f7fbf6; border-color: #c8d4a0;">
+        <div
+          class="fixed inset-0 flex items-center justify-center z-50"
+          style="background-color: rgba(42, 58, 26, 0.35);"
+        >
+          <div
+            class="rounded-box border p-6 w-full max-w-md shadow-xl"
+            style="background-color: #f7fbf6; border-color: #c8d4a0;"
+          >
             <div class="flex items-center justify-between mb-2">
               <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: #385404;">
                 Editar Cliente
               </h2>
-              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: #97a77d;">✕</button>
+              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: #97a77d;">
+                ✕
+              </button>
             </div>
             <p style="font-size: 11px; color: #97a77d; margin-bottom: 16px;">
               {@cliente_editando.nombre}
             </p>
             <form phx-submit="actualizar_cliente">
-              <input type="hidden" name="id" value={@cliente_editando.id} />
+              <input type="hidden" name="_id" value={@cliente_editando.id} />
               <%= for {campo, label, tipo, val} <- [
                 {"nombre",   "Nombre *",  "text",  @cliente_editando.nombre},
                 {"email",    "Email",     "email", @cliente_editando.email},
@@ -428,24 +549,43 @@ defmodule TiendaAlbumesWeb.ClientesLive do
                 {"direccion","Dirección", "text",  @cliente_editando.direccion}
               ] do %>
                 <div class="mb-3">
-                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">{label}</label>
-                  <input type={tipo} name={campo} value={val}
+                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                    {label}
+                  </label>
+                  <input
+                    type={tipo}
+                    name={campo}
+                    value={val}
                     required={campo == "nombre"}
                     class="input input-sm w-full"
-                    style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;" />
+                    style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                  />
                 </div>
               <% end %>
-              <div class="flex gap-3 justify-end" style="border-top: 1px solid #c8d4a0; padding-top: 14px;">
-                <button type="button" phx-click="cerrar_modal" class="btn btn-sm"
-                  style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">Cancelar</button>
-                <button type="submit" class="btn btn-sm"
-                  style="background-color: #385404; color: #f7fbf6; border: none;">Actualizar</button>
+              <div
+                class="flex gap-3 justify-end"
+                style="border-top: 1px solid #c8d4a0; padding-top: 14px;"
+              >
+                <button
+                  type="button"
+                  phx-click="cerrar_modal"
+                  class="btn btn-sm"
+                  style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn-sm"
+                  style="background-color: #385404; color: #f7fbf6; border: none;"
+                >
+                  Actualizar
+                </button>
               </div>
             </form>
           </div>
         </div>
       <% end %>
-
     </Layouts.app>
     """
   end
