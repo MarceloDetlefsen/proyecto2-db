@@ -30,6 +30,7 @@ defmodule TiendaAlbumesWeb.Layouts do
   attr :current_scope, :map,
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
+  attr :current_path, :string, default: ""
 
   slot :inner_block, required: true
 
@@ -56,18 +57,18 @@ defmodule TiendaAlbumesWeb.Layouts do
         class="flex items-center gap-6"
         style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase;"
       >
-        <a href="/inventario" style="color: #5a7a3a;" class="hover:text-primary transition-colors">
+        <.nav_link href="/inventario" current_path={@current_path}>
           Inventario
-        </a>
-        <a href="/ventas" style="color: #5a7a3a;" class="hover:text-primary transition-colors">
+        </.nav_link>
+        <.nav_link href="/ventas" current_path={@current_path}>
           Ventas
-        </a>
-        <a href="/clientes" style="color: #5a7a3a;" class="hover:text-primary transition-colors">
+        </.nav_link>
+        <.nav_link href="/clientes" current_path={@current_path}>
           Clientes
-        </a>
-        <a href="/reportes" style="color: #5a7a3a;" class="hover:text-primary transition-colors">
+        </.nav_link>
+        <.nav_link href="/reportes" current_path={@current_path}>
           Reportes
-        </a>
+        </.nav_link>
         <div class="w-px h-4" style="background-color: #c8d4a0;"></div>
         <.theme_toggle />
         <div class="w-px h-4" style="background-color: #c8d4a0;"></div>
@@ -172,6 +173,33 @@ defmodule TiendaAlbumesWeb.Layouts do
         <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
     </div>
+    """
+  end
+
+  attr :href, :string, required: true
+  attr :current_path, :string, default: ""
+  slot :inner_block, required: true
+
+  def nav_link(assigns) do
+    active = String.starts_with?(assigns.current_path, assigns.href)
+    assigns = assign(assigns, :active, active)
+
+    ~H"""
+    <a
+      href={@href}
+      style={
+        if @active,
+          do: "color: #385404; font-weight: 700; position: relative;",
+          else: "color: #5a7a3a; position: relative;"
+      }
+      class="hover:text-primary transition-colors"
+    >
+      {render_slot(@inner_block)}
+      <%= if @active do %>
+        <span style="position:absolute; bottom:-14px; left:0; right:0; height:3px; background:#385404; border-radius:2px 2px 0 0;">
+        </span>
+      <% end %>
+    </a>
     """
   end
 end

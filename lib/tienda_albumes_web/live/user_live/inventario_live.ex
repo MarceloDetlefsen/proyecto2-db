@@ -14,24 +14,27 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     estadisticas = listar_estadisticas()
     top_artistas = listar_top_artistas()
 
-    {:ok,
-     socket
-     |> assign(:productos, productos)
-     |> assign(:artistas, artistas)
-     |> assign(:generos, generos)
-     |> assign(:estadisticas, estadisticas)
-     |> assign(:top_artistas, top_artistas)
-     |> assign(:vista_activa, :inventario)
-     |> assign(:filtros, %{
-       "formato" => "",
-       "genero" => "",
-       "artista" => "",
-       "stock" => "",
-       "precio_min" => "",
-       "precio_max" => ""
-     })
-     |> assign(:modal, nil)
-     |> assign(:producto_editando, nil)}
+    socket =
+      socket
+      |> assign(:productos, productos)
+      |> assign(:artistas, artistas)
+      |> assign(:generos, generos)
+      |> assign(:estadisticas, estadisticas)
+      |> assign(:top_artistas, top_artistas)
+      |> assign(:vista_activa, :inventario)
+      |> assign(:filtros, %{
+        "formato" => "",
+        "genero" => "",
+        "artista" => "",
+        "stock" => "",
+        "precio_min" => "",
+        "precio_max" => ""
+      })
+      |> assign(:modal, nil)
+      |> assign(:producto_editando, nil)
+      |> assign(:current_path, "/inventario")
+
+    {:ok, socket}
   end
 
   # ──────────────────────────────────────────────
@@ -562,7 +565,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} current_path={@current_path}>
       <%!-- ENCABEZADO + TABS --%>
       <div class="mb-6 flex items-center justify-between">
         <div>

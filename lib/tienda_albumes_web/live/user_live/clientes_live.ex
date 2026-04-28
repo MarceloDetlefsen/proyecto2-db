@@ -5,13 +5,16 @@ defmodule TiendaAlbumesWeb.ClientesLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok,
-     socket
-     |> assign(:clientes, listar_clientes(%{}))
-     |> assign(:filtros, %{"nombre" => "", "solo_compradores" => "false"})
-     |> assign(:modal, nil)
-     |> assign(:cliente_perfil, nil)
-     |> assign(:cliente_editando, nil)}
+    socket =
+      socket
+      |> assign(:clientes, listar_clientes(%{}))
+      |> assign(:filtros, %{"nombre" => "", "solo_compradores" => "false"})
+      |> assign(:modal, nil)
+      |> assign(:cliente_perfil, nil)
+      |> assign(:cliente_editando, nil)
+      |> assign(:current_path, "/clientes")
+
+    {:ok, socket}
   end
 
   # ──────────────────────────────────────────────
@@ -88,8 +91,6 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   end
 
   def handle_event("actualizar_cliente", params, socket) do
-    cliente_id = params["_id"] || params["id"]
-
     result =
       Repo.query(
         """
@@ -101,7 +102,7 @@ defmodule TiendaAlbumesWeb.ClientesLive do
           params["email"],
           params["telefono"],
           params["direccion"],
-          String.to_integer(cliente_id)
+          String.to_integer(params["_id"])
         ]
       )
 
@@ -252,7 +253,7 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} current_path={@current_path}>
       <%!-- ENCABEZADO --%>
       <div class="mb-6 flex items-center justify-between">
         <div>
@@ -351,18 +352,7 @@ defmodule TiendaAlbumesWeb.ClientesLive do
                 </td>
                 <td style="color: #6a7a54; font-size: 12px;">{c.email || "—"}</td>
                 <td style="color: #6a7a54; font-size: 12px;">{c.telefono || "—"}</td>
-                <td>
-                  <span
-                    class="badge badge-sm"
-                    style={
-                      if c.num_compras > 0,
-                        do: "background-color: #2a3a1a; color: #b8c280; border: none;",
-                        else: "background-color: #e2e8d5; color: #97a77d; border: none;"
-                    }
-                  >
-                    {c.num_compras} compra(s)
-                  </span>
-                </td>
+                <td style="color: #97a77d; font-size: 12px;">{c.num_compras} compra(s)</td>
                 <td style="font-weight: 700; color: #385404; font-size: 13px;">${c.total_gastado}</td>
                 <td>
                   <div class="flex gap-2">

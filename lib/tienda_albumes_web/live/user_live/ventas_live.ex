@@ -5,21 +5,24 @@ defmodule TiendaAlbumesWeb.VentasLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok,
-     socket
-     |> assign(:ventas, listar_ventas(%{}))
-     |> assign(:clientes, listar_clientes())
-     |> assign(:empleados, listar_empleados())
-     |> assign(:productos, listar_productos_disponibles())
-     |> assign(:filtros, %{
-       "cliente" => "",
-       "empleado" => "",
-       "fecha_desde" => "",
-       "fecha_hasta" => ""
-     })
-     |> assign(:modal, nil)
-     |> assign(:venta_detalle, nil)
-     |> assign(:items_nueva_venta, [%{id_producto: "", cantidad: 1}])}
+    socket =
+      socket
+      |> assign(:ventas, listar_ventas(%{}))
+      |> assign(:clientes, listar_clientes())
+      |> assign(:empleados, listar_empleados())
+      |> assign(:productos, listar_productos_disponibles())
+      |> assign(:filtros, %{
+        "cliente" => "",
+        "empleado" => "",
+        "fecha_desde" => "",
+        "fecha_hasta" => ""
+      })
+      |> assign(:modal, nil)
+      |> assign(:venta_detalle, nil)
+      |> assign(:items_nueva_venta, [%{id_producto: "", cantidad: 1}])
+      |> assign(:current_path, "/ventas")
+
+    {:ok, socket}
   end
 
   # ──────────────────────────────────────────────
@@ -364,7 +367,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} current_path={@current_path}>
       <%!-- ENCABEZADO --%>
       <div class="mb-6 flex items-center justify-between">
         <div>
