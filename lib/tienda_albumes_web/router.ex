@@ -69,6 +69,7 @@ defmodule TiendaAlbumesWeb.Router do
       live "/users/log-in/:token", UserLive.Confirmation, :new
       live "/inventario", InventarioLive, :index
       live "/ventas", VentasLive, :index
+      live "/clientes", ClientesLive, :index
     end
 
     post "/users/log-in", UserSessionController, :create
