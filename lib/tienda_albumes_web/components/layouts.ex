@@ -41,14 +41,50 @@ defmodule TiendaAlbumesWeb.Layouts do
       style="background-color: #f1f5eb; border-color: #c8d4a0;"
     >
       <a href="/" class="flex items-center gap-3">
-        <div style="width:36px; height:36px; border-radius:50%; background: repeating-radial-gradient(circle, #2a3a1a 0px, #2a3a1a 2px, #f1f5eb 2px, #f1f5eb 4px); border: 2px solid #97a77d; flex-shrink:0;">
-        </div>
+        <svg
+          viewBox="0 0 220 220"
+          width="36"
+          height="36"
+          xmlns="http://www.w3.org/2000/svg"
+          style="flex-shrink: 0;"
+        >
+          <defs>
+            <radialGradient id="navVinylGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#1a2a0a" />
+              <stop offset="40%" stop-color="#243318" />
+              <stop offset="70%" stop-color="#1a2a0a" />
+              <stop offset="100%" stop-color="#0f1a06" />
+            </radialGradient>
+            <radialGradient id="navLabelGrad" cx="40%" cy="35%" r="60%">
+              <stop offset="0%" stop-color="#c8d4a0" />
+              <stop offset="100%" stop-color="#8fa660" />
+            </radialGradient>
+          </defs>
+
+          <circle cx="110" cy="110" r="94" fill="url(#navVinylGrad)" />
+
+          <%= for r <- [84, 74, 64, 54, 44] do %>
+            <circle
+              cx="110"
+              cy="110"
+              r={r}
+              fill="none"
+              stroke="#2e4218"
+              stroke-width="0.7"
+              opacity="0.55"
+            />
+          <% end %>
+
+          <circle cx="110" cy="110" r="28" fill="url(#navLabelGrad)" />
+          <circle cx="110" cy="110" r="4" fill="#0f1a06" />
+          <circle cx="110" cy="110" r="2.5" fill="#243318" />
+        </svg>
         <div>
           <div style="font-family: Georgia, serif; font-size: 17px; font-weight: 700; color: #385404; letter-spacing: 1px;">
-            Tienda Álbumes
+            Heritage Records
           </div>
           <div style="font-size: 9px; letter-spacing: 5px; color: #97a77d; text-transform: uppercase;">
-            Est. 2026 · Guatemala
+            Elite Music Taste
           </div>
         </div>
       </a>
