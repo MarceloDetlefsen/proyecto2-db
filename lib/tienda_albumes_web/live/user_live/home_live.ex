@@ -380,7 +380,9 @@ defmodule TiendaAlbumesWeb.HomeLive do
                   <p style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; color: var(--c-text-primary); line-height: 1.3; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                     {item.titulo}
                   </p>
-                  <p style="font-size: 11px; color: var(--c-text-muted); margin-bottom: 6px;">{item.artista}</p>
+                  <p style="font-size: 11px; color: var(--c-text-muted); margin-bottom: 6px;">
+                    {item.artista}
+                  </p>
                   <div class="flex items-center justify-between">
                     <p style="font-size: 14px; font-weight: 700; color: var(--c-text-primary);">
                       ${item.precio}
@@ -419,7 +421,9 @@ defmodule TiendaAlbumesWeb.HomeLive do
                 </p>
                 <div class="flex items-center justify-between">
                   <span style="font-size: 10px; color: var(--c-text-muted);">{v.items} ítem(s)</span>
-                  <span style="font-size: 13px; font-weight: 700; color: var(--c-text-heading);">${v.total}</span>
+                  <span style="font-size: 13px; font-weight: 700; color: var(--c-text-heading);">
+                    ${v.total}
+                  </span>
                 </div>
               </div>
             <% end %>

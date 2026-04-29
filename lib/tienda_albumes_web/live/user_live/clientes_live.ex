@@ -352,8 +352,12 @@ defmodule TiendaAlbumesWeb.ClientesLive do
                 </td>
                 <td style="color: var(--c-text-body); font-size: 12px;">{c.email || "—"}</td>
                 <td style="color: var(--c-text-body); font-size: 12px;">{c.telefono || "—"}</td>
-                <td style="color: var(--c-text-muted); font-size: 12px;">{c.num_compras} compra(s)</td>
-                <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">${c.total_gastado}</td>
+                <td style="color: var(--c-text-muted); font-size: 12px;">
+                  {c.num_compras} compra(s)
+                </td>
+                <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">
+                  ${c.total_gastado}
+                </td>
                 <td>
                   <div class="flex gap-2">
                     <button
@@ -409,7 +413,11 @@ defmodule TiendaAlbumesWeb.ClientesLive do
                     (@cliente_perfil.cliente.telefono || "Sin teléfono")}
                 </p>
               </div>
-              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: var(--c-text-muted);">
+              <button
+                phx-click="cerrar_modal"
+                class="btn btn-sm btn-ghost"
+                style="color: var(--c-text-muted);"
+              >
                 ✕
               </button>
             </div>
@@ -430,11 +438,15 @@ defmodule TiendaAlbumesWeb.ClientesLive do
                 >
                   <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-3">
-                      <span style="font-size: 11px; color: var(--c-text-muted);">Venta #{compra.id}</span>
+                      <span style="font-size: 11px; color: var(--c-text-muted);">
+                        Venta #{compra.id}
+                      </span>
                       <span style="font-size: 13px; font-weight: 600; color: var(--c-text-primary);">
                         {to_string(compra.fecha)}
                       </span>
-                      <span style="font-size: 11px; color: var(--c-text-muted);">· {compra.empleado}</span>
+                      <span style="font-size: 11px; color: var(--c-text-muted);">
+                        · {compra.empleado}
+                      </span>
                     </div>
                     <span style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">
                       ${compra.total}
@@ -465,7 +477,11 @@ defmodule TiendaAlbumesWeb.ClientesLive do
               <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: var(--c-text-primary);">
                 Nuevo Cliente
               </h2>
-              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: var(--c-text-muted);">
+              <button
+                phx-click="cerrar_modal"
+                class="btn btn-sm btn-ghost"
+                style="color: var(--c-text-muted);"
+              >
                 ✕
               </button>
             </div>
@@ -523,7 +539,11 @@ defmodule TiendaAlbumesWeb.ClientesLive do
               <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: var(--c-text-primary);">
                 Editar Cliente
               </h2>
-              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: var(--c-text-muted);">
+              <button
+                phx-click="cerrar_modal"
+                class="btn btn-sm btn-ghost"
+                style="color: var(--c-text-muted);"
+              >
                 ✕
               </button>
             </div>

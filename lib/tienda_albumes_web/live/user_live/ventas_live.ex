@@ -487,13 +487,19 @@ defmodule TiendaAlbumesWeb.VentasLive do
             <%= for v <- @ventas do %>
               <tr style="border-bottom: 1px solid var(--c-border-light);">
                 <td style="color: var(--c-text-muted); font-size: 12px;">{v.id}</td>
-                <td style="font-weight: 600; color: var(--c-text-primary); font-size: 13px;">{v.fecha}</td>
+                <td style="font-weight: 600; color: var(--c-text-primary); font-size: 13px;">
+                  {v.fecha}
+                </td>
                 <td style="font-family: Georgia, serif; color: var(--c-text-primary); font-size: 13px;">
                   {v.cliente}
                 </td>
                 <td style="color: var(--c-text-body); font-size: 12px;">{v.empleado}</td>
-                <td style="color: var(--c-text-muted); font-size: 12px;">{v.num_items} producto(s)</td>
-                <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">${v.total}</td>
+                <td style="color: var(--c-text-muted); font-size: 12px;">
+                  {v.num_items} producto(s)
+                </td>
+                <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">
+                  ${v.total}
+                </td>
                 <td>
                   <div class="flex gap-2">
                     <button
@@ -543,7 +549,11 @@ defmodule TiendaAlbumesWeb.VentasLive do
                   Atendido por {@venta_detalle.venta && @venta_detalle.venta.empleado}
                 </p>
               </div>
-              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: var(--c-text-muted);">
+              <button
+                phx-click="cerrar_modal"
+                class="btn btn-sm btn-ghost"
+                style="color: var(--c-text-muted);"
+              >
                 ✕
               </button>
             </div>
@@ -571,8 +581,10 @@ defmodule TiendaAlbumesWeb.VentasLive do
                         class="badge badge-sm"
                         style={
                           if item.formato == "Vinilo",
-                            do: "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
-                            else: "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
+                            do:
+                              "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
+                            else:
+                              "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
                         }
                       >
                         {item.formato}
@@ -618,7 +630,11 @@ defmodule TiendaAlbumesWeb.VentasLive do
               <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: var(--c-text-primary);">
                 Nueva Venta
               </h2>
-              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: var(--c-text-muted);">
+              <button
+                phx-click="cerrar_modal"
+                class="btn btn-sm btn-ghost"
+                style="color: var(--c-text-muted);"
+              >
                 ✕
               </button>
             </div>

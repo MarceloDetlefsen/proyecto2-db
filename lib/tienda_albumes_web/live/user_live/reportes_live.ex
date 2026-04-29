@@ -329,8 +329,10 @@ defmodule TiendaAlbumesWeb.ReportesLive do
               class="btn btn-sm"
               style={
                 if @tab_activa == id,
-                  do: "background-color: var(--c-text-primary); color: var(--c-bg-page); border: none;",
-                  else: "background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
+                  do:
+                    "background-color: var(--c-text-primary); color: var(--c-bg-page); border: none;",
+                  else:
+                    "background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
               }
             >
               {label}
@@ -497,8 +499,10 @@ defmodule TiendaAlbumesWeb.ReportesLive do
                       class="badge badge-sm"
                       style={
                         if p.formato == "Vinilo",
-                          do: "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
-                          else: "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
+                          do:
+                            "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
+                          else:
+                            "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
                       }
                     >
                       {p.formato}
@@ -507,7 +511,9 @@ defmodule TiendaAlbumesWeb.ReportesLive do
                   <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">
                     {p.total_vendido}
                   </td>
-                  <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">${p.ingresos}</td>
+                  <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">
+                    ${p.ingresos}
+                  </td>
                   <td style={
                     if p.stock > 0,
                       do: "color: #4a7a2a; font-weight: 600; font-size: 12px;",
@@ -555,7 +561,9 @@ defmodule TiendaAlbumesWeb.ReportesLive do
                   </td>
                   <td style="color: var(--c-text-body); font-size: 12px;">{p.num_ventas}</td>
                   <td style="color: var(--c-text-body); font-size: 12px;">{p.unidades}</td>
-                  <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">${p.ingresos}</td>
+                  <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">
+                    ${p.ingresos}
+                  </td>
                   <td style="color: var(--c-text-body); font-size: 12px;">${p.acumulado}</td>
                 </tr>
               <% end %>
@@ -600,8 +608,10 @@ defmodule TiendaAlbumesWeb.ReportesLive do
                       class="badge badge-sm"
                       style={
                         if p.formato == "Vinilo",
-                          do: "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
-                          else: "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
+                          do:
+                            "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
+                          else:
+                            "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
                       }
                     >
                       {p.formato}
@@ -609,7 +619,9 @@ defmodule TiendaAlbumesWeb.ReportesLive do
                   </td>
                   <td style="color: var(--c-text-body); font-size: 12px;">${p.precio_venta}</td>
                   <td style="color: var(--c-text-body); font-size: 12px;">${p.precio_compra}</td>
-                  <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">${p.margen}</td>
+                  <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">
+                    ${p.margen}
+                  </td>
                   <td style={"font-weight: 700; font-size: 12px; color: #{if Decimal.compare(p.margen_pct, 50) == :gt, do: "#4a7a2a", else: "#a37a2a"};"}>
                     {p.margen_pct}%
                   </td>
@@ -698,8 +710,12 @@ defmodule TiendaAlbumesWeb.ReportesLive do
                   </td>
                   <td style="color: var(--c-text-muted); font-size: 12px;">{g.padre || "—"}</td>
                   <td style="color: var(--c-text-body); font-size: 12px;">{g.num_albumes}</td>
-                  <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">{g.unidades}</td>
-                  <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">${g.ingresos}</td>
+                  <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">
+                    {g.unidades}
+                  </td>
+                  <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">
+                    ${g.ingresos}
+                  </td>
                 </tr>
               <% end %>
             </tbody>

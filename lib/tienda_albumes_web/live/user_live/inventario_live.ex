@@ -584,7 +584,8 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             style={
               if @vista_activa == :inventario,
                 do: "background-color: var(--c-text-primary); color: var(--c-bg-page); border: none;",
-                else: "background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
+                else:
+                  "background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
             }
           >
             Productos
@@ -596,7 +597,8 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             style={
               if @vista_activa == :estadisticas,
                 do: "background-color: var(--c-text-primary); color: var(--c-bg-page); border: none;",
-                else: "background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
+                else:
+                  "background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
             }
           >
             Estadísticas
@@ -608,7 +610,8 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             style={
               if @vista_activa == :artistas,
                 do: "background-color: var(--c-text-primary); color: var(--c-bg-page); border: none;",
-                else: "background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
+                else:
+                  "background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
             }
           >
             Top Artistas
@@ -741,7 +744,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             style="background-color: var(--c-bg-surface); border-bottom: 1px solid var(--c-border);"
           >
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted);">
-              {length(@productos)} productos encontrados
+              {@estadisticas |> Enum.map(& &1.total) |> Enum.sum()} productos encontrados
             </p>
             <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
               Fuente: vista_productos_completa (VIEW)
@@ -773,14 +776,18 @@ defmodule TiendaAlbumesWeb.InventarioLive do
                       class="badge badge-sm"
                       style={
                         if p.formato == "Vinilo",
-                          do: "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
-                          else: "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
+                          do:
+                            "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
+                          else:
+                            "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
                       }
                     >
                       {p.formato}
                     </span>
                   </td>
-                  <td style="font-weight: 600; color: var(--c-text-primary); font-size: 13px;">${p.precio}</td>
+                  <td style="font-weight: 600; color: var(--c-text-primary); font-size: 13px;">
+                    ${p.precio}
+                  </td>
                   <td>
                     <span style={
                       if p.stock > 0,
@@ -822,7 +829,10 @@ defmodule TiendaAlbumesWeb.InventarioLive do
       <%!-- GROUP BY + HAVING + agregación + CTE (WITH) visibles en la UI --%>
       <%= if @vista_activa == :estadisticas do %>
         <div class="rounded-box border overflow-hidden mb-6" style="border-color: var(--c-border);">
-          <div class="px-4 py-3" style="background-color: var(--c-bg-surface); border-bottom: 1px solid var(--c-border);">
+          <div
+            class="px-4 py-3"
+            style="background-color: var(--c-bg-surface); border-bottom: 1px solid var(--c-border);"
+          >
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted);">
               Resumen por formato
             </p>
@@ -849,19 +859,25 @@ defmodule TiendaAlbumesWeb.InventarioLive do
                       class="badge badge-sm"
                       style={
                         if e.formato == "Vinilo",
-                          do: "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
-                          else: "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
+                          do:
+                            "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
+                          else:
+                            "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
                       }
                     >
                       {e.formato}
                     </span>
                   </td>
-                  <td style="color: var(--c-text-primary); font-weight: 600; font-size: 13px;">{e.total}</td>
+                  <td style="color: var(--c-text-primary); font-weight: 600; font-size: 13px;">
+                    {e.total}
+                  </td>
                   <td style="color: var(--c-text-body); font-size: 12px;">{e.stock}</td>
                   <td style="color: var(--c-text-primary); font-size: 12px;">${e.promedio}</td>
                   <td style="color: var(--c-text-body); font-size: 12px;">${e.minimo}</td>
                   <td style="color: var(--c-text-body); font-size: 12px;">${e.maximo}</td>
-                  <td style="font-weight: 700; color: var(--c-text-heading); font-size: 13px;">${e.valor}</td>
+                  <td style="font-weight: 700; color: var(--c-text-heading); font-size: 13px;">
+                    ${e.valor}
+                  </td>
                 </tr>
               <% end %>
             </tbody>
@@ -870,7 +886,10 @@ defmodule TiendaAlbumesWeb.InventarioLive do
 
         <%!-- Totales globales con subquery en FROM --%>
         <%!-- Requisito: subquery en FROM visible en la UI --%>
-        <div class="rounded-box border p-4" style="background-color: var(--c-bg-surface); border-color: var(--c-border);">
+        <div
+          class="rounded-box border p-4"
+          style="background-color: var(--c-bg-surface); border-color: var(--c-border);"
+        >
           <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic; margin-bottom: 8px;">
             Subquery: SELECT ... FROM (SELECT SUM(...), COUNT(...) FROM producto) AS totales
           </p>
@@ -912,7 +931,10 @@ defmodule TiendaAlbumesWeb.InventarioLive do
       <%!-- GROUP BY + HAVING + subquery correlacionado visible en la UI --%>
       <%= if @vista_activa == :artistas do %>
         <div class="rounded-box border overflow-hidden" style="border-color: var(--c-border);">
-          <div class="px-4 py-3" style="background-color: var(--c-bg-surface); border-bottom: 1px solid var(--c-border);">
+          <div
+            class="px-4 py-3"
+            style="background-color: var(--c-bg-surface); border-bottom: 1px solid var(--c-border);"
+          >
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted);">
               Artistas con más de 1 producto
             </p>
@@ -938,10 +960,14 @@ defmodule TiendaAlbumesWeb.InventarioLive do
                     {a.artista}
                   </td>
                   <td style="color: var(--c-text-body); font-size: 12px;">{a.albumes}</td>
-                  <td style="color: var(--c-text-primary); font-weight: 600; font-size: 13px;">{a.productos}</td>
+                  <td style="color: var(--c-text-primary); font-weight: 600; font-size: 13px;">
+                    {a.productos}
+                  </td>
                   <td style="color: var(--c-text-body); font-size: 12px;">{a.stock}</td>
                   <td style="color: var(--c-text-primary); font-size: 12px;">${a.promedio}</td>
-                  <td style="color: var(--c-text-body); font-size: 12px; font-style: italic;">{a.album_caro}</td>
+                  <td style="color: var(--c-text-body); font-size: 12px; font-style: italic;">
+                    {a.album_caro}
+                  </td>
                 </tr>
               <% end %>
             </tbody>

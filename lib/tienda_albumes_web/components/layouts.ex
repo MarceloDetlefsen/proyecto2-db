@@ -30,6 +30,7 @@ defmodule TiendaAlbumesWeb.Layouts do
   attr :current_scope, :map,
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
+
   attr :current_path, :string, default: ""
 
   slot :inner_block, required: true
@@ -112,7 +113,11 @@ defmodule TiendaAlbumesWeb.Layouts do
           <span style="color: var(--c-text-muted); text-transform: none; letter-spacing: 0;">
             {@current_scope.user.email}
           </span>
-          <.link href={~p"/users/log-out"} method="delete" style="color: var(--c-danger); font-weight: 600;">
+          <.link
+            href={~p"/users/log-out"}
+            method="delete"
+            style="color: var(--c-danger); font-weight: 600;"
+          >
             Salir
           </.link>
         <% else %>
