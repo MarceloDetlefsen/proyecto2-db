@@ -5,9 +5,9 @@ defmodule TiendaAlbumesWeb.HomeLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    stats      = cargar_stats()
+    stats = cargar_stats()
     destacados = cargar_destacados()
-    recientes  = cargar_ventas_recientes()
+    recientes = cargar_ventas_recientes()
 
     socket =
       socket
@@ -36,11 +36,11 @@ defmodule TiendaAlbumesWeb.HomeLive do
       {:ok, %{rows: [[productos, artistas, ventas, clientes, ingresos, albumes]]}} ->
         %{
           productos: productos,
-          artistas:  artistas,
-          ventas:    ventas,
-          clientes:  clientes,
-          ingresos:  ingresos |> Decimal.to_float() |> :erlang.float_to_binary(decimals: 2),
-          albumes:   albumes
+          artistas: artistas,
+          ventas: ventas,
+          clientes: clientes,
+          ingresos: ingresos |> Decimal.to_float() |> :erlang.float_to_binary(decimals: 2),
+          albumes: albumes
         }
 
       _ ->
@@ -72,15 +72,16 @@ defmodule TiendaAlbumesWeb.HomeLive do
       {:ok, result} ->
         Enum.map(result.rows, fn [titulo, artista, genero, precio, vendidos] ->
           %{
-            titulo:   titulo,
-            artista:  artista,
-            genero:   genero || "—",
-            precio:   precio,
+            titulo: titulo,
+            artista: artista,
+            genero: genero || "—",
+            precio: precio,
             vendidos: vendidos
           }
         end)
 
-      _ -> []
+      _ ->
+        []
     end
   end
 
@@ -105,15 +106,16 @@ defmodule TiendaAlbumesWeb.HomeLive do
       {:ok, result} ->
         Enum.map(result.rows, fn [id, fecha, cliente, items, total] ->
           %{
-            id:      id,
-            fecha:   Date.to_string(fecha),
+            id: id,
+            fecha: Date.to_string(fecha),
             cliente: cliente,
-            items:   items,
-            total:   total |> Decimal.to_float() |> :erlang.float_to_binary(decimals: 2)
+            items: items,
+            total: total |> Decimal.to_float() |> :erlang.float_to_binary(decimals: 2)
           }
         end)
 
-      _ -> []
+      _ ->
+        []
     end
   end
 
@@ -122,7 +124,6 @@ defmodule TiendaAlbumesWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} current_path={@current_path}>
-
       <%!-- HERO --%>
       <div
         class="rounded-box border p-8 mb-8 flex items-center justify-between overflow-hidden"
@@ -149,9 +150,11 @@ defmodule TiendaAlbumesWeb.HomeLive do
           </p>
           <div class="flex gap-3 mt-6">
             <a href="/inventario" class="btn btn-primary btn-sm">Ver Inventario</a>
-            <a href="/ventas"
-               class="btn btn-sm"
-               style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;">
+            <a
+              href="/ventas"
+              class="btn btn-sm"
+              style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+            >
               Nueva Venta
             </a>
           </div>
@@ -162,71 +165,119 @@ defmodule TiendaAlbumesWeb.HomeLive do
           <svg viewBox="0 0 220 220" width="160" height="160" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <radialGradient id="vinylGrad" cx="50%" cy="50%" r="50%">
-                <stop offset="0%"   stop-color="#1a2a0a"/>
-                <stop offset="40%"  stop-color="#243318"/>
-                <stop offset="70%"  stop-color="#1a2a0a"/>
-                <stop offset="100%" stop-color="#0f1a06"/>
+                <stop offset="0%" stop-color="#1a2a0a" />
+                <stop offset="40%" stop-color="#243318" />
+                <stop offset="70%" stop-color="#1a2a0a" />
+                <stop offset="100%" stop-color="#0f1a06" />
               </radialGradient>
               <radialGradient id="labelGrad" cx="40%" cy="35%" r="60%">
-                <stop offset="0%"   stop-color="#c8d4a0"/>
-                <stop offset="100%" stop-color="#8fa660"/>
+                <stop offset="0%" stop-color="#c8d4a0" />
+                <stop offset="100%" stop-color="#8fa660" />
               </radialGradient>
               <filter id="vinylShadow">
-                <feDropShadow dx="4" dy="6" stdDeviation="8" flood-color="#1a2a0a" flood-opacity="0.5"/>
+                <feDropShadow
+                  dx="4"
+                  dy="6"
+                  stdDeviation="8"
+                  flood-color="#1a2a0a"
+                  flood-opacity="0.5"
+                />
               </filter>
             </defs>
 
             <%!-- sombra del disco --%>
-            <ellipse cx="114" cy="116" rx="94" ry="94" fill="#1a2a0a" opacity="0.25"/>
+            <ellipse cx="114" cy="116" rx="94" ry="94" fill="#1a2a0a" opacity="0.25" />
 
             <%!-- disco principal --%>
-            <circle cx="110" cy="110" r="94" fill="url(#vinylGrad)" filter="url(#vinylShadow)"/>
+            <circle cx="110" cy="110" r="94" fill="url(#vinylGrad)" filter="url(#vinylShadow)" />
 
             <%!-- surcos del vinilo --%>
             <%= for r <- [84, 79, 74, 69, 64, 59, 54, 49, 44, 39] do %>
-              <circle cx="110" cy="110" r={r}
-                fill="none" stroke="#2e4218" stroke-width="0.7" opacity="0.6"/>
+              <circle
+                cx="110"
+                cy="110"
+                r={r}
+                fill="none"
+                stroke="#2e4218"
+                stroke-width="0.7"
+                opacity="0.6"
+              />
             <% end %>
 
             <%!-- reflejo sutil --%>
-            <path d="M 60 55 Q 110 35 160 70"
-              fill="none" stroke="white" stroke-width="0.8" opacity="0.06"/>
+            <path
+              d="M 60 55 Q 110 35 160 70"
+              fill="none"
+              stroke="white"
+              stroke-width="0.8"
+              opacity="0.06"
+            />
 
             <%!-- etiqueta central --%>
-            <circle cx="110" cy="110" r="28" fill="url(#labelGrad)"/>
+            <circle cx="110" cy="110" r="28" fill="url(#labelGrad)" />
 
             <%!-- texto en etiqueta --%>
-            <text x="110" y="105"
+            <text
+              x="110"
+              y="105"
               text-anchor="middle"
               font-family="Georgia, serif"
               font-size="7"
               font-weight="700"
               fill="#2a3a1a"
-              letter-spacing="1">HERITAGE</text>
-            <text x="110" y="115"
+              letter-spacing="1"
+            >
+              HERITAGE
+            </text>
+            <text
+              x="110"
+              y="115"
               text-anchor="middle"
               font-family="Georgia, serif"
               font-size="4.5"
               fill="#385404"
-              letter-spacing="2">RECORDS</text>
-            <line x1="88" y1="119" x2="132" y2="119"
-              stroke="#385404" stroke-width="0.5" opacity="0.5"/>
-            <text x="110" y="127"
+              letter-spacing="2"
+            >
+              RECORDS
+            </text>
+            <line
+              x1="88"
+              y1="119"
+              x2="132"
+              y2="119"
+              stroke="#385404"
+              stroke-width="0.5"
+              opacity="0.5"
+            />
+            <text
+              x="110"
+              y="127"
               text-anchor="middle"
               font-family="Georgia, serif"
               font-size="4"
               fill="#4a5e30"
-              letter-spacing="1">GUATEMALA</text>
+              letter-spacing="1"
+            >
+              GUATEMALA
+            </text>
 
             <%!-- agujero central --%>
-            <circle cx="110" cy="110" r="4" fill="#0f1a06"/>
-            <circle cx="110" cy="110" r="2.5" fill="#243318"/>
+            <circle cx="110" cy="110" r="4" fill="#0f1a06" />
+            <circle cx="110" cy="110" r="2.5" fill="#243318" />
 
             <%!-- brazo del tocadiscos --%>
-            <line x1="178" y1="30" x2="148" y2="90"
-              stroke="#97a77d" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
-            <circle cx="178" cy="30" r="4" fill="#97a77d" opacity="0.8"/>
-            <circle cx="146" cy="93" r="3" fill="#b8c280" opacity="0.9"/>
+            <line
+              x1="178"
+              y1="30"
+              x2="148"
+              y2="90"
+              stroke="#97a77d"
+              stroke-width="2"
+              stroke-linecap="round"
+              opacity="0.7"
+            />
+            <circle cx="178" cy="30" r="4" fill="#97a77d" opacity="0.8" />
+            <circle cx="146" cy="93" r="3" fill="#b8c280" opacity="0.9" />
           </svg>
         </div>
       </div>
@@ -256,7 +307,6 @@ defmodule TiendaAlbumesWeb.HomeLive do
 
       <%!-- FILA INFERIOR: catálogo + ventas recientes --%>
       <div class="grid grid-cols-3 gap-6">
-
         <%!-- CATÁLOGO MÁS VENDIDO (2/3) --%>
         <div class="col-span-2">
           <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d;
@@ -270,23 +320,57 @@ defmodule TiendaAlbumesWeb.HomeLive do
                 style="background-color: #f7fbf6; border-color: #c8d4a0;"
               >
                 <%!-- mini disco --%>
-                <svg viewBox="0 0 60 60" width="44" height="44" style="flex-shrink:0; margin-top:2px;" xmlns="http://www.w3.org/2000/svg">
+                <svg
+                  viewBox="0 0 60 60"
+                  width="44"
+                  height="44"
+                  style="flex-shrink:0; margin-top:2px;"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
                   <defs>
-                    <radialGradient id={"mg-#{item.titulo |> String.slice(0,4) |> String.replace(" ","")}"} cx="50%" cy="50%" r="50%">
-                      <stop offset="0%"  stop-color="#243318"/>
-                      <stop offset="100%" stop-color="#0f1a06"/>
+                    <radialGradient
+                      id={"mg-#{item.titulo |> String.slice(0,4) |> String.replace(" ","")}"}
+                      cx="50%"
+                      cy="50%"
+                      r="50%"
+                    >
+                      <stop offset="0%" stop-color="#243318" />
+                      <stop offset="100%" stop-color="#0f1a06" />
                     </radialGradient>
-                    <radialGradient id={"lg-#{item.titulo |> String.slice(0,4) |> String.replace(" ","")}"} cx="40%" cy="35%" r="60%">
-                      <stop offset="0%"  stop-color="#c8d4a0"/>
-                      <stop offset="100%" stop-color="#8fa660"/>
+                    <radialGradient
+                      id={"lg-#{item.titulo |> String.slice(0,4) |> String.replace(" ","")}"}
+                      cx="40%"
+                      cy="35%"
+                      r="60%"
+                    >
+                      <stop offset="0%" stop-color="#c8d4a0" />
+                      <stop offset="100%" stop-color="#8fa660" />
                     </radialGradient>
                   </defs>
-                  <circle cx="30" cy="30" r="28" fill={"url(#mg-#{item.titulo |> String.slice(0,4) |> String.replace(" ","")})" }/>
+                  <circle
+                    cx="30"
+                    cy="30"
+                    r="28"
+                    fill={"url(#mg-#{item.titulo |> String.slice(0,4) |> String.replace(" ","")})" }
+                  />
                   <%= for r <- [24, 20, 16, 12] do %>
-                    <circle cx="30" cy="30" r={r} fill="none" stroke="#2e4218" stroke-width="0.6" opacity="0.5"/>
+                    <circle
+                      cx="30"
+                      cy="30"
+                      r={r}
+                      fill="none"
+                      stroke="#2e4218"
+                      stroke-width="0.6"
+                      opacity="0.5"
+                    />
                   <% end %>
-                  <circle cx="30" cy="30" r="9" fill={"url(#lg-#{item.titulo |> String.slice(0,4) |> String.replace(" ","")})"}/>
-                  <circle cx="30" cy="30" r="2.5" fill="#0f1a06"/>
+                  <circle
+                    cx="30"
+                    cy="30"
+                    r="9"
+                    fill={"url(#lg-#{item.titulo |> String.slice(0,4) |> String.replace(" ","")})"}
+                  />
+                  <circle cx="30" cy="30" r="2.5" fill="#0f1a06" />
                 </svg>
 
                 <div style="min-width:0;">
@@ -339,16 +423,16 @@ defmodule TiendaAlbumesWeb.HomeLive do
                 </div>
               </div>
             <% end %>
-            <a href="/ventas"
-               style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-                      color: #97a77d; text-align: center; padding-top: 4px; display: block;">
+            <a
+              href="/ventas"
+              style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+                      color: #97a77d; text-align: center; padding-top: 4px; display: block;"
+            >
               Ver todas →
             </a>
           </div>
         </div>
-
       </div>
-
     </Layouts.app>
     """
   end
