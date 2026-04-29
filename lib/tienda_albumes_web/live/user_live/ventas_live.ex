@@ -371,17 +371,17 @@ defmodule TiendaAlbumesWeb.VentasLive do
       <%!-- ENCABEZADO --%>
       <div class="mb-6 flex items-center justify-between">
         <div>
-          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d;">
+          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);">
             Gestión
           </p>
-          <h1 style="font-family: Georgia, serif; font-size: 1.8rem; font-weight: 700; color: #385404;">
+          <h1 style="font-family: Georgia, serif; font-size: 1.8rem; font-weight: 700; color: var(--c-text-primary);">
             Ventas
           </h1>
         </div>
         <button
           phx-click="nueva_venta"
           class="btn btn-sm"
-          style="background-color: #385404; color: #f7fbf6; border: none;"
+          style="background-color: var(--c-text-primary); color: var(--c-bg-page); border: none;"
         >
           + Nueva Venta
         </button>
@@ -392,16 +392,16 @@ defmodule TiendaAlbumesWeb.VentasLive do
         phx-change="filtrar"
         phx-submit="filtrar"
         class="rounded-box border p-4 mb-6 grid grid-cols-5 gap-3"
-        style="background-color: #f1f5eb; border-color: #c8d4a0;"
+        style="background-color: var(--c-bg-surface); border-color: var(--c-border);"
       >
         <div>
-          <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+          <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
             Cliente
           </label>
           <select
             name="cliente"
             class="select select-sm w-full"
-            style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+            style="background-color: var(--c-bg-page); border-color: var(--c-border); color: var(--c-text-primary);"
           >
             <option value="">Todos</option>
             <%= for {nombre, id} <- @clientes do %>
@@ -410,13 +410,13 @@ defmodule TiendaAlbumesWeb.VentasLive do
           </select>
         </div>
         <div>
-          <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+          <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
             Empleado
           </label>
           <select
             name="empleado"
             class="select select-sm w-full"
-            style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+            style="background-color: var(--c-bg-page); border-color: var(--c-border); color: var(--c-text-primary);"
           >
             <option value="">Todos</option>
             <%= for {nombre, id} <- @empleados do %>
@@ -425,7 +425,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
           </select>
         </div>
         <div>
-          <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+          <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
             Desde
           </label>
           <input
@@ -433,11 +433,11 @@ defmodule TiendaAlbumesWeb.VentasLive do
             name="fecha_desde"
             value={@filtros["fecha_desde"]}
             class="input input-sm w-full"
-            style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+            style="background-color: var(--c-bg-page); border-color: var(--c-border); color: var(--c-text-primary);"
           />
         </div>
         <div>
-          <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+          <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
             Hasta
           </label>
           <input
@@ -445,7 +445,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
             name="fecha_hasta"
             value={@filtros["fecha_hasta"]}
             class="input input-sm w-full"
-            style="background-color: #f7fbf6; border-color: #c8d4a0; color: #385404;"
+            style="background-color: var(--c-bg-page); border-color: var(--c-border); color: var(--c-text-primary);"
           />
         </div>
         <div class="flex items-end">
@@ -453,7 +453,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
             type="button"
             phx-click="limpiar_filtros"
             class="btn btn-sm w-full"
-            style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+            style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
           >
             Limpiar filtros
           </button>
@@ -461,23 +461,23 @@ defmodule TiendaAlbumesWeb.VentasLive do
       </form>
 
       <%!-- TABLA --%>
-      <div class="rounded-box border overflow-hidden" style="border-color: #c8d4a0;">
+      <div class="rounded-box border overflow-hidden" style="border-color: var(--c-border);">
         <div
           class="flex items-center justify-between px-4 py-3"
-          style="background-color: #f1f5eb; border-bottom: 1px solid #c8d4a0;"
+          style="background-color: var(--c-bg-surface); border-bottom: 1px solid var(--c-border);"
         >
-          <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">
+          <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted);">
             {length(@ventas)} ventas encontradas
           </p>
-          <p style="font-size: 10px; color: #b8c280; font-style: italic;">
+          <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
             JOIN compra → cliente · empleado · detalle_compra · GROUP BY · SUM()
           </p>
         </div>
-        <table class="table table-sm w-full" style="background-color: #f7fbf6;">
-          <thead style="background-color: #f1f5eb;">
+        <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
+          <thead style="background-color: var(--c-bg-surface);">
             <tr>
               <%= for col <- ~w(# Fecha Cliente Empleado Ítems Total Acciones) do %>
-                <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; font-weight: 600; border-bottom: 1px solid #c8d4a0;">
+                <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
                   {col}
                 </th>
               <% end %>
@@ -485,22 +485,22 @@ defmodule TiendaAlbumesWeb.VentasLive do
           </thead>
           <tbody>
             <%= for v <- @ventas do %>
-              <tr style="border-bottom: 1px solid #e2e8d5;">
-                <td style="color: #97a77d; font-size: 12px;">{v.id}</td>
-                <td style="font-weight: 600; color: #385404; font-size: 13px;">{v.fecha}</td>
-                <td style="font-family: Georgia, serif; color: #385404; font-size: 13px;">
+              <tr style="border-bottom: 1px solid var(--c-border-light);">
+                <td style="color: var(--c-text-muted); font-size: 12px;">{v.id}</td>
+                <td style="font-weight: 600; color: var(--c-text-primary); font-size: 13px;">{v.fecha}</td>
+                <td style="font-family: Georgia, serif; color: var(--c-text-primary); font-size: 13px;">
                   {v.cliente}
                 </td>
-                <td style="color: #6a7a54; font-size: 12px;">{v.empleado}</td>
-                <td style="color: #97a77d; font-size: 12px;">{v.num_items} producto(s)</td>
-                <td style="font-weight: 700; color: #385404; font-size: 13px;">${v.total}</td>
+                <td style="color: var(--c-text-body); font-size: 12px;">{v.empleado}</td>
+                <td style="color: var(--c-text-muted); font-size: 12px;">{v.num_items} producto(s)</td>
+                <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">${v.total}</td>
                 <td>
                   <div class="flex gap-2">
                     <button
                       phx-click="ver_detalle"
                       phx-value-id={v.id}
                       class="btn btn-xs"
-                      style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+                      style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
                     >
                       Ver detalle
                     </button>
@@ -509,7 +509,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
                       phx-value-id={v.id}
                       data-confirm="¿Eliminar esta venta? El stock será restaurado."
                       class="btn btn-xs"
-                      style="background-color: #f8e8e5; border-color: #e8c8c0; color: #a33a2a;"
+                      style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
                     >
                       Eliminar
                     </button>
@@ -525,35 +525,35 @@ defmodule TiendaAlbumesWeb.VentasLive do
       <%= if @modal == :detalle && @venta_detalle do %>
         <div
           class="fixed inset-0 flex items-center justify-center z-50"
-          style="background-color: rgba(42, 58, 26, 0.35);"
+          style="background-color: var(--c-overlay);"
         >
           <div
             class="rounded-box border p-6 w-full max-w-2xl shadow-xl"
-            style="background-color: #f7fbf6; border-color: #c8d4a0;"
+            style="background-color: var(--c-bg-page); border-color: var(--c-border);"
           >
             <%!-- Cabecera modal --%>
             <div class="flex items-start justify-between mb-4">
               <div>
-                <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: #385404;">
+                <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: var(--c-text-primary);">
                   Venta #{@venta_detalle.venta && @venta_detalle.venta.id}
                 </h2>
-                <p style="font-size: 11px; color: #97a77d; margin-top: 2px;">
+                <p style="font-size: 11px; color: var(--c-text-muted); margin-top: 2px;">
                   {@venta_detalle.venta && to_string(@venta_detalle.venta.fecha)} · {@venta_detalle.venta &&
                     @venta_detalle.venta.cliente} ·
                   Atendido por {@venta_detalle.venta && @venta_detalle.venta.empleado}
                 </p>
               </div>
-              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: #97a77d;">
+              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: var(--c-text-muted);">
                 ✕
               </button>
             </div>
 
             <%!-- Tabla de ítems --%>
-            <table class="table table-sm w-full mb-4" style="background-color: #f7fbf6;">
-              <thead style="background-color: #f1f5eb;">
+            <table class="table table-sm w-full mb-4" style="background-color: var(--c-bg-page);">
+              <thead style="background-color: var(--c-bg-surface);">
                 <tr>
                   <%= for col <- ["Álbum", "Artista", "Formato", "Cant.", "Precio unit.", "Subtotal"] do %>
-                    <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; font-weight: 600; border-bottom: 1px solid #c8d4a0;">
+                    <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
                       {col}
                     </th>
                   <% end %>
@@ -561,26 +561,26 @@ defmodule TiendaAlbumesWeb.VentasLive do
               </thead>
               <tbody>
                 <%= for item <- @venta_detalle.items do %>
-                  <tr style="border-bottom: 1px solid #e2e8d5;">
-                    <td style="font-family: Georgia, serif; font-weight: 600; color: #385404; font-size: 13px;">
+                  <tr style="border-bottom: 1px solid var(--c-border-light);">
+                    <td style="font-family: Georgia, serif; font-weight: 600; color: var(--c-text-primary); font-size: 13px;">
                       {item.titulo}
                     </td>
-                    <td style="color: #6a7a54; font-size: 12px;">{item.artista}</td>
+                    <td style="color: var(--c-text-body); font-size: 12px;">{item.artista}</td>
                     <td>
                       <span
                         class="badge badge-sm"
                         style={
                           if item.formato == "Vinilo",
-                            do: "background-color: #2a3a1a; color: #b8c280; border: none;",
-                            else: "background-color: #e2e8d5; color: #385404; border: none;"
+                            do: "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
+                            else: "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
                         }
                       >
                         {item.formato}
                       </span>
                     </td>
-                    <td style="color: #6a7a54; font-size: 12px;">{item.cantidad}</td>
-                    <td style="color: #6a7a54; font-size: 12px;">${item.precio}</td>
-                    <td style="font-weight: 700; color: #385404; font-size: 13px;">
+                    <td style="color: var(--c-text-body); font-size: 12px;">{item.cantidad}</td>
+                    <td style="color: var(--c-text-body); font-size: 12px;">${item.precio}</td>
+                    <td style="font-weight: 700; color: var(--c-text-primary); font-size: 13px;">
                       ${item.subtotal}
                     </td>
                   </tr>
@@ -591,12 +591,12 @@ defmodule TiendaAlbumesWeb.VentasLive do
             <%!-- Total --%>
             <div
               class="flex justify-between items-center pt-3"
-              style="border-top: 1px solid #c8d4a0;"
+              style="border-top: 1px solid var(--c-border);"
             >
-              <span style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d;">
+              <span style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted);">
                 Total de la venta
               </span>
-              <span style="font-family: Georgia, serif; font-size: 1.4rem; font-weight: 700; color: #385404;">
+              <span style="font-family: Georgia, serif; font-size: 1.4rem; font-weight: 700; color: var(--c-text-primary);">
                 ${@venta_detalle.venta && @venta_detalle.venta.total}
               </span>
             </div>
@@ -608,21 +608,21 @@ defmodule TiendaAlbumesWeb.VentasLive do
       <%= if @modal == :nueva do %>
         <div
           class="fixed inset-0 flex items-center justify-center z-50"
-          style="background-color: rgba(42, 58, 26, 0.35);"
+          style="background-color: var(--c-overlay);"
         >
           <div
             class="rounded-box border p-6 w-full max-w-2xl shadow-xl overflow-y-auto"
-            style="background-color: #f7fbf6; border-color: #c8d4a0; max-height: 90vh;"
+            style="background-color: var(--c-bg-page); border-color: var(--c-border); max-height: 90vh;"
           >
             <div class="flex items-center justify-between mb-2">
-              <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: #385404;">
+              <h2 style="font-family: Georgia, serif; font-size: 1.2rem; font-weight: 700; color: var(--c-text-primary);">
                 Nueva Venta
               </h2>
-              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: #97a77d;">
+              <button phx-click="cerrar_modal" class="btn btn-sm btn-ghost" style="color: var(--c-text-muted);">
                 ✕
               </button>
             </div>
-            <p style="font-size: 10px; color: #97a77d; margin-bottom: 16px; font-style: italic;">
+            <p style="font-size: 10px; color: var(--c-text-muted); margin-bottom: 16px; font-style: italic;">
               Registra compra, valida stock y descuenta unidades en una sola transacción
             </p>
 
@@ -630,7 +630,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
               <%!-- Datos de la venta --%>
               <div class="grid grid-cols-3 gap-3 mb-5">
                 <div>
-                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
                     Fecha
                   </label>
                   <input
@@ -639,18 +639,18 @@ defmodule TiendaAlbumesWeb.VentasLive do
                     required
                     value={Date.utc_today() |> Date.to_string()}
                     class="input input-sm w-full"
-                    style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                    style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
                   />
                 </div>
                 <div>
-                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
                     Cliente
                   </label>
                   <select
                     name="id_cliente"
                     required
                     class="select select-sm w-full"
-                    style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                    style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
                   >
                     <option value="">Seleccionar...</option>
                     <%= for {nombre, id} <- @clientes do %>
@@ -659,14 +659,14 @@ defmodule TiendaAlbumesWeb.VentasLive do
                   </select>
                 </div>
                 <div>
-                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; display: block; margin-bottom: 4px;">
+                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
                     Empleado
                   </label>
                   <select
                     name="id_empleado"
                     required
                     class="select select-sm w-full"
-                    style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                    style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
                   >
                     <option value="">Seleccionar...</option>
                     <%= for {nombre, id} <- @empleados do %>
@@ -677,7 +677,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
               </div>
 
               <%!-- Línea separadora con label --%>
-              <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; border-top: 1px solid #c8d4a0; padding-top: 12px; margin-bottom: 10px;">
+              <p style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); border-top: 1px solid var(--c-border); padding-top: 12px; margin-bottom: 10px;">
                 Productos (solo con stock disponible · subquery IN)
               </p>
 
@@ -685,13 +685,13 @@ defmodule TiendaAlbumesWeb.VentasLive do
               <%= for {_item, idx} <- Enum.with_index(@items_nueva_venta) do %>
                 <div class="flex gap-2 mb-2 items-end">
                   <div class="flex-1">
-                    <label style="font-size: 9px; color: #97a77d; display: block; margin-bottom: 3px;">
+                    <label style="font-size: 9px; color: var(--c-text-muted); display: block; margin-bottom: 3px;">
                       Producto
                     </label>
                     <select
                       name={"producto_#{idx}"}
                       class="select select-sm w-full"
-                      style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                      style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
                     >
                       <option value="0">Seleccionar...</option>
                       <%= for p <- @productos do %>
@@ -702,7 +702,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
                     </select>
                   </div>
                   <div style="width: 80px;">
-                    <label style="font-size: 9px; color: #97a77d; display: block; margin-bottom: 3px;">
+                    <label style="font-size: 9px; color: var(--c-text-muted); display: block; margin-bottom: 3px;">
                       Cant.
                     </label>
                     <input
@@ -711,7 +711,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
                       min="1"
                       value="1"
                       class="input input-sm w-full"
-                      style="background-color: #f1f5eb; border-color: #c8d4a0; color: #385404;"
+                      style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
                     />
                   </div>
                   <button
@@ -719,7 +719,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
                     phx-click="quitar_item"
                     phx-value-idx={idx}
                     class="btn btn-sm btn-ghost mb-0"
-                    style="color: #a33a2a;"
+                    style="color: var(--c-danger);"
                   >
                     ✕
                   </button>
@@ -730,27 +730,27 @@ defmodule TiendaAlbumesWeb.VentasLive do
                 type="button"
                 phx-click="agregar_item"
                 class="btn btn-sm w-full mb-5"
-                style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+                style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
               >
                 + Agregar producto
               </button>
 
               <div
                 class="flex gap-3 justify-end"
-                style="border-top: 1px solid #c8d4a0; padding-top: 14px;"
+                style="border-top: 1px solid var(--c-border); padding-top: 14px;"
               >
                 <button
                   type="button"
                   phx-click="cerrar_modal"
                   class="btn btn-sm"
-                  style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+                  style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   class="btn btn-sm"
-                  style="background-color: #385404; color: #f7fbf6; border: none;"
+                  style="background-color: var(--c-text-primary); color: var(--c-bg-page); border: none;"
                 >
                   Registrar Venta
                 </button>

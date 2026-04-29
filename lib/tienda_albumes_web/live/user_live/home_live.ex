@@ -127,7 +127,7 @@ defmodule TiendaAlbumesWeb.HomeLive do
       <%!-- HERO --%>
       <div
         class="rounded-box border p-8 mb-8 flex items-center justify-between overflow-hidden"
-        style="background-color: #f1f5eb; border-color: #c8d4a0; position: relative;"
+        style="background-color: var(--c-bg-surface); border-color: var(--c-border); position: relative;"
       >
         <%!-- fondo decorativo --%>
         <div style="position:absolute; right:180px; top:-60px; width:300px; height:300px;
@@ -138,13 +138,13 @@ defmodule TiendaAlbumesWeb.HomeLive do
         </div>
 
         <div style="position: relative; z-index: 1;">
-          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d; margin-bottom: 10px;">
+          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted); margin-bottom: 10px;">
             Sistema de gestión · Tienda de música
           </p>
-          <h1 style="font-family: Georgia, serif; font-size: 2.6rem; font-weight: 700; color: #2a3a1a; line-height: 1.1; margin-bottom: 14px;">
+          <h1 style="font-family: Georgia, serif; font-size: 2.6rem; font-weight: 700; color: var(--c-text-heading); line-height: 1.1; margin-bottom: 14px;">
             Heritage<br />Records
           </h1>
-          <p style="color: #6a7a54; font-size: 13px; max-width: 400px; line-height: 1.7;">
+          <p style="color: var(--c-text-body); font-size: 13px; max-width: 400px; line-height: 1.7;">
             Plataforma para administrar el inventario de álbumes y vinilos, registrar ventas,
             gestionar clientes y proveedores, y generar reportes de la tienda.
           </p>
@@ -153,7 +153,7 @@ defmodule TiendaAlbumesWeb.HomeLive do
             <a
               href="/ventas"
               class="btn btn-sm"
-              style="background-color: #e2e8d5; border-color: #c8d4a0; color: #385404;"
+              style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
             >
               Nueva Venta
             </a>
@@ -292,13 +292,13 @@ defmodule TiendaAlbumesWeb.HomeLive do
         ] do %>
           <div
             class="rounded-box border p-5 text-center"
-            style="background-color: #f7fbf6; border-color: #c8d4a0;"
+            style="background-color: var(--c-bg-page); border-color: var(--c-border);"
           >
-            <p style="font-size: 16px; color: #b8c280; margin-bottom: 4px;">{icono}</p>
-            <p style="font-family: Georgia, serif; font-size: 2rem; font-weight: 700; color: #385404;">
+            <p style="font-size: 16px; color: var(--c-text-faint); margin-bottom: 4px;">{icono}</p>
+            <p style="font-family: Georgia, serif; font-size: 2rem; font-weight: 700; color: var(--c-text-primary);">
               {valor}
             </p>
-            <p style="font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: #97a77d; margin-top: 4px;">
+            <p style="font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--c-text-muted); margin-top: 4px;">
               {label}
             </p>
           </div>
@@ -309,15 +309,15 @@ defmodule TiendaAlbumesWeb.HomeLive do
       <div class="grid grid-cols-3 gap-6">
         <%!-- CATÁLOGO MÁS VENDIDO (2/3) --%>
         <div class="col-span-2">
-          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d;
-                    margin-bottom: 14px; border-bottom: 1px solid #c8d4a0; padding-bottom: 8px;">
+          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);
+                    margin-bottom: 14px; border-bottom: 1px solid var(--c-border); padding-bottom: 8px;">
             — Más vendidos —
           </p>
           <div class="grid grid-cols-2 gap-4">
             <%= for item <- @destacados do %>
               <div
                 class="rounded-box border p-4 flex gap-3 items-start"
-                style="background-color: #f7fbf6; border-color: #c8d4a0;"
+                style="background-color: var(--c-bg-page); border-color: var(--c-border);"
               >
                 <%!-- mini disco --%>
                 <svg
@@ -374,18 +374,18 @@ defmodule TiendaAlbumesWeb.HomeLive do
                 </svg>
 
                 <div style="min-width:0;">
-                  <p style="font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: #97a77d; margin-bottom: 2px;">
+                  <p style="font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); margin-bottom: 2px;">
                     {item.genero}
                   </p>
-                  <p style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; color: #385404; line-height: 1.3; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  <p style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; color: var(--c-text-primary); line-height: 1.3; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                     {item.titulo}
                   </p>
-                  <p style="font-size: 11px; color: #97a77d; margin-bottom: 6px;">{item.artista}</p>
+                  <p style="font-size: 11px; color: var(--c-text-muted); margin-bottom: 6px;">{item.artista}</p>
                   <div class="flex items-center justify-between">
-                    <p style="font-size: 14px; font-weight: 700; color: #385404;">
+                    <p style="font-size: 14px; font-weight: 700; color: var(--c-text-primary);">
                       ${item.precio}
                     </p>
-                    <span style="font-size: 10px; color: #b8c280; letter-spacing: 1px;">
+                    <span style="font-size: 10px; color: var(--c-text-faint); letter-spacing: 1px;">
                       {item.vendidos} uds.
                     </span>
                   </div>
@@ -397,36 +397,36 @@ defmodule TiendaAlbumesWeb.HomeLive do
 
         <%!-- VENTAS RECIENTES (1/3) --%>
         <div>
-          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #97a77d;
-                    margin-bottom: 14px; border-bottom: 1px solid #c8d4a0; padding-bottom: 8px;">
+          <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);
+                    margin-bottom: 14px; border-bottom: 1px solid var(--c-border); padding-bottom: 8px;">
             — Ventas recientes —
           </p>
           <div class="flex flex-col gap-2">
             <%= for v <- @recientes do %>
               <div
                 class="rounded-box border p-3"
-                style="background-color: #f7fbf6; border-color: #c8d4a0;"
+                style="background-color: var(--c-bg-page); border-color: var(--c-border);"
               >
                 <div class="flex items-center justify-between mb-1">
-                  <span style="font-size: 10px; color: #97a77d; letter-spacing: 1px;">
+                  <span style="font-size: 10px; color: var(--c-text-muted); letter-spacing: 1px;">
                     #{v.id}
                   </span>
-                  <span style="font-size: 10px; color: #b8c280;">{v.fecha}</span>
+                  <span style="font-size: 10px; color: var(--c-text-faint);">{v.fecha}</span>
                 </div>
-                <p style="font-size: 12px; font-weight: 600; color: #385404; margin-bottom: 2px;
+                <p style="font-size: 12px; font-weight: 600; color: var(--c-text-primary); margin-bottom: 2px;
                            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                   {v.cliente}
                 </p>
                 <div class="flex items-center justify-between">
-                  <span style="font-size: 10px; color: #97a77d;">{v.items} ítem(s)</span>
-                  <span style="font-size: 13px; font-weight: 700; color: #2a3a1a;">${v.total}</span>
+                  <span style="font-size: 10px; color: var(--c-text-muted);">{v.items} ítem(s)</span>
+                  <span style="font-size: 13px; font-weight: 700; color: var(--c-text-heading);">${v.total}</span>
                 </div>
               </div>
             <% end %>
             <a
               href="/ventas"
               style="font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-                      color: #97a77d; text-align: center; padding-top: 4px; display: block;"
+                      color: var(--c-text-muted); text-align: center; padding-top: 4px; display: block;"
             >
               Ver todas →
             </a>

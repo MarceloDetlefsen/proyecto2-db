@@ -38,7 +38,7 @@ defmodule TiendaAlbumesWeb.Layouts do
     ~H"""
     <header
       class="border-b px-6 py-3 flex items-center justify-between"
-      style="background-color: #f1f5eb; border-color: #c8d4a0;"
+      style="background-color: var(--c-bg-surface); border-color: var(--c-border);"
     >
       <a href="/" class="flex items-center gap-3">
         <svg
@@ -80,10 +80,10 @@ defmodule TiendaAlbumesWeb.Layouts do
           <circle cx="110" cy="110" r="2.5" fill="#243318" />
         </svg>
         <div>
-          <div style="font-family: Georgia, serif; font-size: 17px; font-weight: 700; color: #385404; letter-spacing: 1px;">
+          <div style="font-family: Georgia, serif; font-size: 17px; font-weight: 700; color: var(--c-text-primary); letter-spacing: 1px;">
             Heritage Records
           </div>
-          <div style="font-size: 9px; letter-spacing: 5px; color: #97a77d; text-transform: uppercase;">
+          <div style="font-size: 9px; letter-spacing: 5px; color: var(--c-text-muted); text-transform: uppercase;">
             Elite Music Taste
           </div>
         </div>
@@ -105,14 +105,14 @@ defmodule TiendaAlbumesWeb.Layouts do
         <.nav_link href="/reportes" current_path={@current_path}>
           Reportes
         </.nav_link>
-        <div class="w-px h-4" style="background-color: #c8d4a0;"></div>
+        <div class="w-px h-4" style="background-color: var(--c-border);"></div>
         <.theme_toggle />
-        <div class="w-px h-4" style="background-color: #c8d4a0;"></div>
+        <div class="w-px h-4" style="background-color: var(--c-border);"></div>
         <%= if @current_scope do %>
-          <span style="color: #97a77d; text-transform: none; letter-spacing: 0;">
+          <span style="color: var(--c-text-muted); text-transform: none; letter-spacing: 0;">
             {@current_scope.user.email}
           </span>
-          <.link href={~p"/users/log-out"} method="delete" style="color: #a33a2a; font-weight: 600;">
+          <.link href={~p"/users/log-out"} method="delete" style="color: var(--c-danger); font-weight: 600;">
             Salir
           </.link>
         <% else %>
@@ -225,7 +225,7 @@ defmodule TiendaAlbumesWeb.Layouts do
       href={@href}
       style={
         if @active,
-          do: "color: #385404; font-weight: 700; position: relative;",
+          do: "color: var(--c-text-primary); font-weight: 700; position: relative;",
           else: "color: #5a7a3a; position: relative;"
       }
       class="hover:text-primary transition-colors"
