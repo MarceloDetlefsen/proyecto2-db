@@ -7,7 +7,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
   def mount(_params, _session, socket) do
     socket =
       socket
-      |> assign(:ventas, listar_ventas(%{}))
+      |> assign(:sorts, %{ventas: %{field: :fecha, direction: :desc}})
       |> assign(:clientes, listar_clientes())
       |> assign(:empleados, listar_empleados())
       |> assign(:productos, listar_productos_disponibles())
@@ -21,6 +21,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
       |> assign(:venta_detalle, nil)
       |> assign(:items_nueva_venta, [%{id_producto: "", cantidad: 1}])
       |> assign(:current_path, "/ventas")
+      |> refrescar_ventas()
 
     {:ok, socket}
   end
@@ -32,12 +33,17 @@ defmodule TiendaAlbumesWeb.VentasLive do
   @impl true
   def handle_event("filtrar", params, socket) do
     filtros = Map.take(params, ["cliente", "empleado", "fecha_desde", "fecha_hasta"])
-    {:noreply, socket |> assign(:ventas, listar_ventas(filtros)) |> assign(:filtros, filtros)}
+    {:noreply, socket |> assign(:filtros, filtros) |> refrescar_ventas()}
   end
 
   def handle_event("limpiar_filtros", _params, socket) do
     filtros = %{"cliente" => "", "empleado" => "", "fecha_desde" => "", "fecha_hasta" => ""}
-    {:noreply, socket |> assign(:ventas, listar_ventas(filtros)) |> assign(:filtros, filtros)}
+    {:noreply, socket |> assign(:filtros, filtros) |> refrescar_ventas()}
+  end
+
+  def handle_event("ordenar", %{"tabla" => "ventas", "campo" => campo}, socket) do
+    {:noreply,
+     socket |> toggle_sort(:ventas, String.to_existing_atom(campo)) |> refrescar_ventas()}
   end
 
   # ──────────────────────────────────────────────
@@ -156,9 +162,9 @@ defmodule TiendaAlbumesWeb.VentasLive do
       {:ok, _} ->
         {:noreply,
          socket
-         |> assign(:ventas, listar_ventas(socket.assigns.filtros))
          |> assign(:productos, listar_productos_disponibles())
          |> assign(:modal, nil)
+         |> refrescar_ventas()
          |> put_flash(:info, "Venta registrada correctamente.")}
 
       {:error, {:stock_insuficiente, id}} ->
@@ -198,8 +204,8 @@ defmodule TiendaAlbumesWeb.VentasLive do
 
     {:noreply,
      socket
-     |> assign(:ventas, listar_ventas(socket.assigns.filtros))
      |> assign(:productos, listar_productos_disponibles())
+     |> refrescar_ventas()
      |> put_flash(:info, "Venta eliminada y stock restaurado.")}
   end
 
@@ -360,6 +366,76 @@ defmodule TiendaAlbumesWeb.VentasLive do
     end
   end
 
+  defp refrescar_ventas(socket) do
+    ventas =
+      socket.assigns.filtros
+      |> listar_ventas()
+      |> ordenar_registros(socket.assigns.sorts.ventas)
+
+    assign(socket, :ventas, ventas)
+  end
+
+  defp toggle_sort(socket, tabla, field) do
+    current = socket.assigns.sorts[tabla]
+
+    direction =
+      if current.field == field do
+        toggle_direction(current.direction)
+      else
+        :asc
+      end
+
+    assign(
+      socket,
+      :sorts,
+      Map.put(socket.assigns.sorts, tabla, %{field: field, direction: direction})
+    )
+  end
+
+  defp toggle_direction(:asc), do: :desc
+  defp toggle_direction(:desc), do: :asc
+
+  defp ordenar_registros(registros, %{field: field, direction: direction}) do
+    Enum.sort_by(registros, &sort_value(Map.get(&1, field)), direction)
+  end
+
+  defp sort_value(%Date{} = value), do: Date.to_gregorian_days(value)
+  defp sort_value(%Decimal{} = value), do: Decimal.to_float(value)
+  defp sort_value(value) when is_binary(value), do: String.downcase(value)
+  defp sort_value(nil), do: ""
+  defp sort_value(value), do: value
+
+  attr :label, :string, required: true
+  attr :table, :string, required: true
+  attr :field, :atom, required: true
+  attr :sorts, :map, required: true
+
+  defp sortable_header(assigns) do
+    active_sort = assigns.sorts[String.to_existing_atom(assigns.table)]
+    active? = active_sort.field == assigns.field
+    direction = if active?, do: active_sort.direction, else: nil
+
+    assigns =
+      assigns
+      |> assign(:active?, active?)
+      |> assign(:direction, direction)
+
+    ~H"""
+    <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
+      <button
+        type="button"
+        phx-click="ordenar"
+        phx-value-tabla={@table}
+        phx-value-campo={@field}
+        class="inline-flex items-center gap-1 transition-colors hover:text-[var(--c-text-primary)]"
+      >
+        <span>{@label}</span>
+        <span :if={@active?}>{if @direction == :asc, do: "↑", else: "↓"}</span>
+      </button>
+    </th>
+    """
+  end
+
   # ══════════════════════════════════════════════
   # Render
   # ══════════════════════════════════════════════
@@ -476,11 +552,30 @@ defmodule TiendaAlbumesWeb.VentasLive do
         <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
           <thead style="background-color: var(--c-bg-surface);">
             <tr>
-              <%= for col <- ~w(# Fecha Cliente Empleado Ítems Total Acciones) do %>
-                <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
-                  {col}
-                </th>
-              <% end %>
+              <.sortable_header label="#" table="ventas" field={:id} sorts={@sorts} />
+              <.sortable_header label="Fecha" table="ventas" field={:fecha} sorts={@sorts} />
+              <.sortable_header
+                label="Cliente"
+                table="ventas"
+                field={:cliente}
+                sorts={@sorts}
+              />
+              <.sortable_header
+                label="Empleado"
+                table="ventas"
+                field={:empleado}
+                sorts={@sorts}
+              />
+              <.sortable_header
+                label="Ítems"
+                table="ventas"
+                field={:num_items}
+                sorts={@sorts}
+              />
+              <.sortable_header label="Total" table="ventas" field={:total} sorts={@sorts} />
+              <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody>

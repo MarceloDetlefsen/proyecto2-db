@@ -8,19 +8,18 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     # Crea el VIEW automáticamente si no existe todavía
     crear_view_si_no_existe()
 
-    productos = listar_productos(%{})
     artistas = listar_artistas()
     generos = listar_generos()
-    estadisticas = listar_estadisticas()
-    top_artistas = listar_top_artistas()
 
     socket =
       socket
-      |> assign(:productos, productos)
       |> assign(:artistas, artistas)
       |> assign(:generos, generos)
-      |> assign(:estadisticas, estadisticas)
-      |> assign(:top_artistas, top_artistas)
+      |> assign(:sorts, %{
+        productos: %{field: :titulo, direction: :asc},
+        estadisticas: %{field: :valor, direction: :desc},
+        artistas: %{field: :productos, direction: :desc}
+      })
       |> assign(:vista_activa, :inventario)
       |> assign(:filtros, %{
         "formato" => "",
@@ -33,6 +32,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
       |> assign(:modal, nil)
       |> assign(:producto_editando, nil)
       |> assign(:current_path, "/inventario")
+      |> refrescar_datos()
 
     {:ok, socket}
   end
@@ -46,6 +46,13 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     {:noreply, assign(socket, :vista_activa, String.to_atom(vista))}
   end
 
+  def handle_event("ordenar", %{"tabla" => tabla, "campo" => campo}, socket) do
+    {:noreply,
+     socket
+     |> toggle_sort(String.to_existing_atom(tabla), String.to_existing_atom(campo))
+     |> refrescar_datos()}
+  end
+
   # ──────────────────────────────────────────────
   # Eventos de filtros
   # ──────────────────────────────────────────────
@@ -54,8 +61,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     filtros =
       Map.take(params, ["formato", "genero", "artista", "stock", "precio_min", "precio_max"])
 
-    productos = listar_productos(filtros)
-    {:noreply, socket |> assign(:productos, productos) |> assign(:filtros, filtros)}
+    {:noreply, socket |> assign(:filtros, filtros) |> refrescar_datos()}
   end
 
   def handle_event("limpiar_filtros", _params, socket) do
@@ -68,8 +74,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
       "precio_max" => ""
     }
 
-    productos = listar_productos(filtros)
-    {:noreply, socket |> assign(:productos, productos) |> assign(:filtros, filtros)}
+    {:noreply, socket |> assign(:filtros, filtros) |> refrescar_datos()}
   end
 
   # ──────────────────────────────────────────────
@@ -151,15 +156,9 @@ defmodule TiendaAlbumesWeb.InventarioLive do
 
     case result do
       {:ok, _} ->
-        productos = listar_productos(socket.assigns.filtros)
-        estadisticas = listar_estadisticas()
-        top_artistas = listar_top_artistas()
-
         {:noreply,
          socket
-         |> assign(:productos, productos)
-         |> assign(:estadisticas, estadisticas)
-         |> assign(:top_artistas, top_artistas)
+         |> refrescar_datos()
          |> assign(:modal, nil)
          |> put_flash(:info, "Producto creado correctamente.")}
 
@@ -193,15 +192,9 @@ defmodule TiendaAlbumesWeb.InventarioLive do
 
     case result do
       {:ok, _} ->
-        productos = listar_productos(socket.assigns.filtros)
-        estadisticas = listar_estadisticas()
-        top_artistas = listar_top_artistas()
-
         {:noreply,
          socket
-         |> assign(:productos, productos)
-         |> assign(:estadisticas, estadisticas)
-         |> assign(:top_artistas, top_artistas)
+         |> refrescar_datos()
          |> assign(:modal, nil)
          |> put_flash(:info, "Producto actualizado.")}
 
@@ -213,15 +206,10 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   # ── Eliminar producto ─────────────────────────
   def handle_event("eliminar_producto", %{"id" => id}, socket) do
     Repo.query("DELETE FROM producto WHERE id_producto = $1", [String.to_integer(id)])
-    productos = listar_productos(socket.assigns.filtros)
-    estadisticas = listar_estadisticas()
-    top_artistas = listar_top_artistas()
 
     {:noreply,
      socket
-     |> assign(:productos, productos)
-     |> assign(:estadisticas, estadisticas)
-     |> assign(:top_artistas, top_artistas)
+     |> refrescar_datos()
      |> put_flash(:info, "Producto eliminado.")}
   end
 
@@ -558,6 +546,86 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     end
   end
 
+  defp refrescar_datos(socket) do
+    productos =
+      socket.assigns.filtros
+      |> listar_productos()
+      |> ordenar_registros(socket.assigns.sorts.productos)
+
+    estadisticas =
+      listar_estadisticas()
+      |> ordenar_registros(socket.assigns.sorts.estadisticas)
+
+    top_artistas =
+      listar_top_artistas()
+      |> ordenar_registros(socket.assigns.sorts.artistas)
+
+    socket
+    |> assign(:productos, productos)
+    |> assign(:estadisticas, estadisticas)
+    |> assign(:top_artistas, top_artistas)
+  end
+
+  defp toggle_sort(socket, tabla, field) do
+    current = socket.assigns.sorts[tabla]
+
+    direction =
+      if current.field == field do
+        toggle_direction(current.direction)
+      else
+        :asc
+      end
+
+    assign(
+      socket,
+      :sorts,
+      Map.put(socket.assigns.sorts, tabla, %{field: field, direction: direction})
+    )
+  end
+
+  defp toggle_direction(:asc), do: :desc
+  defp toggle_direction(:desc), do: :asc
+
+  defp ordenar_registros(registros, %{field: field, direction: direction}) do
+    Enum.sort_by(registros, &sort_value(Map.get(&1, field)), direction)
+  end
+
+  defp sort_value(%Decimal{} = value), do: Decimal.to_float(value)
+  defp sort_value(value) when is_binary(value), do: String.downcase(value)
+  defp sort_value(nil), do: ""
+  defp sort_value(value), do: value
+
+  attr :label, :string, required: true
+  attr :table, :string, required: true
+  attr :field, :atom, required: true
+  attr :sorts, :map, required: true
+
+  defp sortable_header(assigns) do
+    active_sort = assigns.sorts[String.to_existing_atom(assigns.table)]
+    active? = active_sort.field == assigns.field
+    direction = if active?, do: active_sort.direction, else: nil
+
+    assigns =
+      assigns
+      |> assign(:active?, active?)
+      |> assign(:direction, direction)
+
+    ~H"""
+    <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
+      <button
+        type="button"
+        phx-click="ordenar"
+        phx-value-tabla={@table}
+        phx-value-campo={@field}
+        class="inline-flex items-center gap-1 transition-colors hover:text-[var(--c-text-primary)]"
+      >
+        <span>{@label}</span>
+        <span :if={@active?}>{if @direction == :asc, do: "↑", else: "↓"}</span>
+      </button>
+    </th>
+    """
+  end
+
   # ══════════════════════════════════════════════
   # Render
   # ══════════════════════════════════════════════
@@ -754,11 +822,37 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
               <tr>
-                <%= for col <- ~w(# Álbum Artista Año Género Formato Precio Stock Acciones) do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
-                    {col}
-                  </th>
-                <% end %>
+                <.sortable_header label="#" table="productos" field={:id} sorts={@sorts} />
+                <.sortable_header label="Álbum" table="productos" field={:titulo} sorts={@sorts} />
+                <.sortable_header
+                  label="Artista"
+                  table="productos"
+                  field={:artista}
+                  sorts={@sorts}
+                />
+                <.sortable_header label="Año" table="productos" field={:anio} sorts={@sorts} />
+                <.sortable_header
+                  label="Género"
+                  table="productos"
+                  field={:genero}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Formato"
+                  table="productos"
+                  field={:formato}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Precio"
+                  table="productos"
+                  field={:precio}
+                  sorts={@sorts}
+                />
+                <.sortable_header label="Stock" table="productos" field={:stock} sorts={@sorts} />
+                <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -844,11 +938,48 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
               <tr>
-                <%= for col <- ["Formato", "Productos", "Stock Total", "Precio Promedio", "Precio Mín.", "Precio Máx.", "Valor Inventario"] do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
-                    {col}
-                  </th>
-                <% end %>
+                <.sortable_header
+                  label="Formato"
+                  table="estadisticas"
+                  field={:formato}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Productos"
+                  table="estadisticas"
+                  field={:total}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Stock Total"
+                  table="estadisticas"
+                  field={:stock}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Precio Promedio"
+                  table="estadisticas"
+                  field={:promedio}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Precio Mín."
+                  table="estadisticas"
+                  field={:minimo}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Precio Máx."
+                  table="estadisticas"
+                  field={:maximo}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Valor Inventario"
+                  table="estadisticas"
+                  field={:valor}
+                  sorts={@sorts}
+                />
               </tr>
             </thead>
             <tbody>
@@ -946,11 +1077,27 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
               <tr>
-                <%= for col <- ["Artista", "Álbumes", "Productos", "Stock", "Precio Promedio", "Álbum más caro"] do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
-                    {col}
-                  </th>
-                <% end %>
+                <.sortable_header label="Artista" table="artistas" field={:artista} sorts={@sorts} />
+                <.sortable_header label="Álbumes" table="artistas" field={:albumes} sorts={@sorts} />
+                <.sortable_header
+                  label="Productos"
+                  table="artistas"
+                  field={:productos}
+                  sorts={@sorts}
+                />
+                <.sortable_header label="Stock" table="artistas" field={:stock} sorts={@sorts} />
+                <.sortable_header
+                  label="Precio Promedio"
+                  table="artistas"
+                  field={:promedio}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Álbum más caro"
+                  table="artistas"
+                  field={:album_caro}
+                  sorts={@sorts}
+                />
               </tr>
             </thead>
             <tbody>

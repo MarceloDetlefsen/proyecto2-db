@@ -17,14 +17,17 @@ defmodule TiendaAlbumesWeb.ReportesLive do
      socket
      |> assign(:current_path, "/reportes")
      |> assign(:tab_activa, "productos_mas_vendidos")
+     |> assign(:sorts, %{
+       productos_mas_vendidos: %{field: :total_vendido, direction: :desc},
+       ingresos_periodo: %{field: :anio_mes, direction: :asc},
+       margen_producto: %{field: :margen_pct, direction: :desc},
+       empleados_ventas: %{field: :total_vendido, direction: :desc},
+       generos_vendidos: %{field: :unidades, direction: :desc}
+     })
      |> assign(:filtros, filtros)
      |> assign(:anios, listar_anios())
      |> assign(:generos_padre, listar_generos_padre())
-     |> assign(:productos_mas_vendidos, reporte_productos_mas_vendidos(filtros))
-     |> assign(:ingresos_periodo, reporte_ingresos_periodo(filtros))
-     |> assign(:margen_producto, reporte_margen_producto(filtros))
-     |> assign(:empleados_ventas, reporte_empleados_ventas(filtros))
-     |> assign(:generos_vendidos, reporte_generos_vendidos(filtros))}
+     |> refrescar_reportes(filtros)}
   end
 
   @impl true
@@ -51,13 +54,48 @@ defmodule TiendaAlbumesWeb.ReportesLive do
     {:noreply, socket |> assign(:filtros, filtros) |> refrescar_reportes(filtros)}
   end
 
+  def handle_event("ordenar", %{"tabla" => tabla, "campo" => campo}, socket) do
+    filtros = socket.assigns.filtros
+
+    {:noreply,
+     socket
+     |> toggle_sort(String.to_existing_atom(tabla), String.to_existing_atom(campo))
+     |> refrescar_reportes(filtros)}
+  end
+
   defp refrescar_reportes(socket, filtros) do
     socket
-    |> assign(:productos_mas_vendidos, reporte_productos_mas_vendidos(filtros))
-    |> assign(:ingresos_periodo, reporte_ingresos_periodo(filtros))
-    |> assign(:margen_producto, reporte_margen_producto(filtros))
-    |> assign(:empleados_ventas, reporte_empleados_ventas(filtros))
-    |> assign(:generos_vendidos, reporte_generos_vendidos(filtros))
+    |> assign(
+      :productos_mas_vendidos,
+      filtros
+      |> reporte_productos_mas_vendidos()
+      |> ordenar_registros(socket.assigns.sorts.productos_mas_vendidos)
+    )
+    |> assign(
+      :ingresos_periodo,
+      filtros
+      |> reporte_ingresos_periodo()
+      |> Enum.map(&Map.put(&1, :anio_mes, {&1.anio, &1.mes_num}))
+      |> ordenar_registros(socket.assigns.sorts.ingresos_periodo)
+    )
+    |> assign(
+      :margen_producto,
+      filtros
+      |> reporte_margen_producto()
+      |> ordenar_registros(socket.assigns.sorts.margen_producto)
+    )
+    |> assign(
+      :empleados_ventas,
+      filtros
+      |> reporte_empleados_ventas()
+      |> ordenar_registros(socket.assigns.sorts.empleados_ventas)
+    )
+    |> assign(
+      :generos_vendidos,
+      filtros
+      |> reporte_generos_vendidos()
+      |> ordenar_registros(socket.assigns.sorts.generos_vendidos)
+    )
   end
 
   # ══════════════════════════════════════════════
@@ -164,6 +202,7 @@ defmodule TiendaAlbumesWeb.ReportesLive do
         Enum.map(r.rows, fn [anio, mes, ingresos, ventas, unidades, acumulado] ->
           %{
             anio: anio,
+            mes_num: mes,
             mes: mes_nombre(mes),
             ingresos: ingresos,
             num_ventas: ventas,
@@ -297,6 +336,66 @@ defmodule TiendaAlbumesWeb.ReportesLive do
 
   defp mes_nombre(mes),
     do: ~w(Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic) |> Enum.at(mes - 1, "?")
+
+  defp toggle_sort(socket, tabla, field) do
+    current = socket.assigns.sorts[tabla]
+
+    direction =
+      if current.field == field do
+        toggle_direction(current.direction)
+      else
+        :asc
+      end
+
+    assign(
+      socket,
+      :sorts,
+      Map.put(socket.assigns.sorts, tabla, %{field: field, direction: direction})
+    )
+  end
+
+  defp toggle_direction(:asc), do: :desc
+  defp toggle_direction(:desc), do: :asc
+
+  defp ordenar_registros(registros, %{field: field, direction: direction}) do
+    Enum.sort_by(registros, &sort_value(Map.get(&1, field)), direction)
+  end
+
+  defp sort_value(%Decimal{} = value), do: Decimal.to_float(value)
+  defp sort_value(value) when is_binary(value), do: String.downcase(value)
+  defp sort_value(nil), do: ""
+  defp sort_value(value), do: value
+
+  attr :label, :string, required: true
+  attr :table, :string, required: true
+  attr :field, :atom, required: true
+  attr :sorts, :map, required: true
+
+  defp sortable_header(assigns) do
+    active_sort = assigns.sorts[String.to_existing_atom(assigns.table)]
+    active? = active_sort.field == assigns.field
+    direction = if active?, do: active_sort.direction, else: nil
+
+    assigns =
+      assigns
+      |> assign(:active?, active?)
+      |> assign(:direction, direction)
+
+    ~H"""
+    <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
+      <button
+        type="button"
+        phx-click="ordenar"
+        phx-value-tabla={@table}
+        phx-value-campo={@field}
+        class="inline-flex items-center gap-1 transition-colors hover:text-[var(--c-text-primary)]"
+      >
+        <span>{@label}</span>
+        <span :if={@active?}>{if @direction == :asc, do: "↑", else: "↓"}</span>
+      </button>
+    </th>
+    """
+  end
 
   # ══════════════════════════════════════════════
   # Render
@@ -479,11 +578,48 @@ defmodule TiendaAlbumesWeb.ReportesLive do
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
               <tr>
-                <%= for col <- ["#", "Álbum", "Artista", "Formato", "Unid. vendidas", "Ingresos", "Stock"] do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
-                    {col}
-                  </th>
-                <% end %>
+                <.sortable_header
+                  label="#"
+                  table="productos_mas_vendidos"
+                  field={:total_vendido}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Álbum"
+                  table="productos_mas_vendidos"
+                  field={:titulo}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Artista"
+                  table="productos_mas_vendidos"
+                  field={:artista}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Formato"
+                  table="productos_mas_vendidos"
+                  field={:formato}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Unid. vendidas"
+                  table="productos_mas_vendidos"
+                  field={:total_vendido}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Ingresos"
+                  table="productos_mas_vendidos"
+                  field={:ingresos}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Stock"
+                  table="productos_mas_vendidos"
+                  field={:stock}
+                  sorts={@sorts}
+                />
               </tr>
             </thead>
             <tbody>
@@ -545,11 +681,37 @@ defmodule TiendaAlbumesWeb.ReportesLive do
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
               <tr>
-                <%= for col <- ["Año", "Mes", "Ventas", "Unidades", "Ingresos mes", "Acumulado"] do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
-                    {col}
-                  </th>
-                <% end %>
+                <.sortable_header label="Año" table="ingresos_periodo" field={:anio} sorts={@sorts} />
+                <.sortable_header
+                  label="Mes"
+                  table="ingresos_periodo"
+                  field={:mes_num}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Ventas"
+                  table="ingresos_periodo"
+                  field={:num_ventas}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Unidades"
+                  table="ingresos_periodo"
+                  field={:unidades}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Ingresos mes"
+                  table="ingresos_periodo"
+                  field={:ingresos}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Acumulado"
+                  table="ingresos_periodo"
+                  field={:acumulado}
+                  sorts={@sorts}
+                />
               </tr>
             </thead>
             <tbody>
@@ -589,11 +751,48 @@ defmodule TiendaAlbumesWeb.ReportesLive do
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
               <tr>
-                <%= for col <- ["Álbum", "Artista", "Formato", "Precio venta", "Precio compra", "Margen $", "Margen %"] do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
-                    {col}
-                  </th>
-                <% end %>
+                <.sortable_header
+                  label="Álbum"
+                  table="margen_producto"
+                  field={:titulo}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Artista"
+                  table="margen_producto"
+                  field={:artista}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Formato"
+                  table="margen_producto"
+                  field={:formato}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Precio venta"
+                  table="margen_producto"
+                  field={:precio_venta}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Precio compra"
+                  table="margen_producto"
+                  field={:precio_compra}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Margen $"
+                  table="margen_producto"
+                  field={:margen}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Margen %"
+                  table="margen_producto"
+                  field={:margen_pct}
+                  sorts={@sorts}
+                />
               </tr>
             </thead>
             <tbody>
@@ -649,11 +848,36 @@ defmodule TiendaAlbumesWeb.ReportesLive do
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
               <tr>
-                <%= for col <- ["#", "Empleado", "Ventas", "Unidades", "Total vendido"] do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
-                    {col}
-                  </th>
-                <% end %>
+                <.sortable_header
+                  label="#"
+                  table="empleados_ventas"
+                  field={:total_vendido}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Empleado"
+                  table="empleados_ventas"
+                  field={:empleado}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Ventas"
+                  table="empleados_ventas"
+                  field={:num_ventas}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Unidades"
+                  table="empleados_ventas"
+                  field={:unidades}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Total vendido"
+                  table="empleados_ventas"
+                  field={:total_vendido}
+                  sorts={@sorts}
+                />
               </tr>
             </thead>
             <tbody>
@@ -694,11 +918,42 @@ defmodule TiendaAlbumesWeb.ReportesLive do
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
               <tr>
-                <%= for col <- ["#", "Género", "Categoría padre", "Álbumes", "Unidades", "Ingresos"] do %>
-                  <th style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); font-weight: 600; border-bottom: 1px solid var(--c-border);">
-                    {col}
-                  </th>
-                <% end %>
+                <.sortable_header
+                  label="#"
+                  table="generos_vendidos"
+                  field={:unidades}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Género"
+                  table="generos_vendidos"
+                  field={:genero}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Categoría padre"
+                  table="generos_vendidos"
+                  field={:padre}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Álbumes"
+                  table="generos_vendidos"
+                  field={:num_albumes}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Unidades"
+                  table="generos_vendidos"
+                  field={:unidades}
+                  sorts={@sorts}
+                />
+                <.sortable_header
+                  label="Ingresos"
+                  table="generos_vendidos"
+                  field={:ingresos}
+                  sorts={@sorts}
+                />
               </tr>
             </thead>
             <tbody>
