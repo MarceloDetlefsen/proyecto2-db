@@ -74,7 +74,10 @@ defmodule TiendaAlbumesWeb.UserLive.Confirmation do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> put_flash(:error, "Este método ya no está disponible. Inicia sesión con correo y contraseña.")
+     |> put_flash(
+       :error,
+       "Este método ya no está disponible. Inicia sesión con correo y contraseña."
+     )
      |> push_navigate(to: ~p"/users/log-in")}
   end
 

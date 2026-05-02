@@ -11,24 +11,177 @@ defmodule TiendaAlbumesWeb.Layouts do
   slot :inner_block, required: true
 
   def app(assigns) do
-    nombre_empleado =
+    {nombre_empleado, puesto_empleado, empleado_id, es_admin} =
       case assigns[:current_scope] do
         %{user: %{id: user_id}} when not is_nil(user_id) ->
           case Repo.query(
-                 "SELECT nombre FROM empleado WHERE user_id = $1 LIMIT 1",
+                 "SELECT nombre, puesto, id_empleado FROM empleado WHERE user_id = $1 LIMIT 1",
                  [user_id]
                ) do
-            {:ok, %{rows: [[nombre]]}} -> nombre
-            _ -> nil
+            {:ok, %{rows: [[nombre, puesto, emp_id]]}} ->
+              {nombre, puesto, emp_id, puesto == "Gerente"}
+
+            _ ->
+              {nil, nil, nil, false}
           end
 
         _ ->
-          nil
+          {nil, nil, nil, false}
       end
 
-    assigns = assign(assigns, :nombre_empleado, nombre_empleado)
+    assigns =
+      assigns
+      |> assign(:nombre_empleado, nombre_empleado)
+      |> assign(:puesto_empleado, puesto_empleado)
+      |> assign(:empleado_id, empleado_id)
+      |> assign(:es_admin, es_admin)
+      # Estado del mini-modal de perfil rápido (solo para no-admin)
+      |> assign_new(:perfil_modal_open, fn -> false end)
+      |> assign_new(:perfil_tab, fn -> "password" end)
+      |> assign_new(:perfil_error, fn -> nil end)
 
     ~H"""
+    <%!-- Mini-modal de perfil rápido (para empleados no-admin) --%>
+    <%= if @perfil_modal_open && @current_scope do %>
+      <div
+        class="fixed inset-0 flex items-center justify-center z-50"
+        style="background-color: var(--c-overlay);"
+        phx-click="cerrar_perfil_modal"
+      >
+        <div
+          class="rounded-box border p-6 w-full max-w-sm shadow-xl"
+          style="background-color: var(--c-bg-page); border-color: var(--c-border);"
+          phx-click-away="cerrar_perfil_modal"
+        >
+          <%!-- Cabecera --%>
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 style="font-family: Georgia, serif; font-size: 1.1rem; font-weight: 700; color: var(--c-text-primary);">
+                {if @nombre_empleado, do: @nombre_empleado, else: @current_scope.user.email}
+              </h2>
+              <p style="font-size: 11px; color: var(--c-text-muted); margin-top: 2px;">
+                {@puesto_empleado} · {@current_scope.user.email}
+              </p>
+            </div>
+            <button
+              phx-click="cerrar_perfil_modal"
+              style="color: var(--c-text-muted); cursor: pointer; background: none; border: none; font-size: 16px;"
+            >
+              ✕
+            </button>
+          </div>
+
+          <%!-- Tabs: Contraseña | Teléfono --%>
+          <div
+            class="flex gap-1 mt-4 mb-5"
+            style="border-bottom: 1px solid var(--c-border); padding-bottom: 0;"
+          >
+            <%= for {tab_id, tab_label} <- [{"password", "Contraseña"}, {"telefono", "Teléfono"}] do %>
+              <button
+                type="button"
+                phx-click="perfil_tab"
+                phx-value-tab={tab_id}
+                style={
+                  if @perfil_tab == tab_id,
+                    do:
+                      "padding: 6px 14px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; border: none; background: none; color: var(--c-text-primary); font-weight: 700; border-bottom: 2px solid #5a7a3a; cursor: pointer; margin-bottom: -1px;",
+                    else:
+                      "padding: 6px 14px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; border: none; background: none; color: var(--c-text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;"
+                }
+              >
+                {tab_label}
+              </button>
+            <% end %>
+          </div>
+
+          <%!-- Error --%>
+          <%= if @perfil_error do %>
+            <p style="font-size: 12px; color: var(--c-danger); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+              <.icon name="hero-exclamation-circle" class="size-4" /> {@perfil_error}
+            </p>
+          <% end %>
+
+          <%!-- Tab: Contraseña --%>
+          <%= if @perfil_tab == "password" do %>
+            <form phx-submit="perfil_guardar_password">
+              <%= for {name, label} <- [
+                {"password",              "Nueva contraseña"},
+                {"password_confirmation", "Confirmar contraseña"}
+              ] do %>
+                <div class="mb-4">
+                  <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
+                    {label}
+                  </label>
+                  <input
+                    type="password"
+                    name={name}
+                    autocomplete="new-password"
+                    style="width: 100%; padding: 6px 10px; font-size: 13px; border-radius: 4px; border: 1px solid var(--c-border); background-color: var(--c-bg-surface); color: var(--c-text-primary); outline: none;"
+                  />
+                </div>
+              <% end %>
+              <p style="font-size: 11px; color: var(--c-text-faint); margin-bottom: 14px;">
+                Mínimo 12 caracteres.
+              </p>
+              <div
+                class="flex gap-3 justify-end"
+                style="border-top: 1px solid var(--c-border); padding-top: 14px;"
+              >
+                <button
+                  type="button"
+                  phx-click="cerrar_perfil_modal"
+                  style="padding: 6px 14px; font-size: 12px; border-radius: 4px; background-color: var(--c-btn-sec-bg); border: 1px solid var(--c-border); color: var(--c-text-primary); cursor: pointer;"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  style="padding: 6px 14px; font-size: 12px; border-radius: 4px; background-color: #5a7a3a; color: #fff; border: none; cursor: pointer;"
+                >
+                  Actualizar
+                </button>
+              </div>
+            </form>
+          <% end %>
+
+          <%!-- Tab: Teléfono --%>
+          <%= if @perfil_tab == "telefono" do %>
+            <form phx-submit="perfil_guardar_telefono">
+              <div class="mb-5">
+                <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
+                  Teléfono
+                </label>
+                <input
+                  type="text"
+                  name="telefono"
+                  placeholder="Ej. 5552-0001"
+                  style="width: 100%; padding: 6px 10px; font-size: 13px; border-radius: 4px; border: 1px solid var(--c-border); background-color: var(--c-bg-surface); color: var(--c-text-primary); outline: none;"
+                />
+              </div>
+              <div
+                class="flex gap-3 justify-end"
+                style="border-top: 1px solid var(--c-border); padding-top: 14px;"
+              >
+                <button
+                  type="button"
+                  phx-click="cerrar_perfil_modal"
+                  style="padding: 6px 14px; font-size: 12px; border-radius: 4px; background-color: var(--c-btn-sec-bg); border: 1px solid var(--c-border); color: var(--c-text-primary); cursor: pointer;"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  style="padding: 6px 14px; font-size: 12px; border-radius: 4px; background-color: #5a7a3a; color: #fff; border: none; cursor: pointer;"
+                >
+                  Guardar
+                </button>
+              </div>
+            </form>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
     <header
       class="border-b px-6 py-3 flex items-center justify-between"
       style="background-color: var(--c-bg-surface); border-color: var(--c-border);"
@@ -93,21 +246,42 @@ defmodule TiendaAlbumesWeb.Layouts do
         <div class="w-px h-4" style="background-color: var(--c-border);"></div>
 
         <%= if @current_scope do %>
-          <%!-- Nombre o email con link al perfil --%>
-          <.link
-            href="/perfil"
-            style={
-              if String.starts_with?(@current_path, "/perfil"),
-                do:
-                  "color: var(--c-text-primary); font-weight: 700; text-transform: none; letter-spacing: 0;",
-                else: "color: var(--c-text-muted); text-transform: none; letter-spacing: 0;"
-            }
-          >
-            {if @nombre_empleado, do: @nombre_empleado, else: @current_scope.user.email}
-          </.link>
+          <%= cond do %>
+            <%!-- Admin: link a la pantalla de empleados --%>
+            <% @es_admin -> %>
+              <.link
+                href="/perfil"
+                style={
+                  if String.starts_with?(@current_path, "/perfil"),
+                    do:
+                      "color: var(--c-text-primary); font-weight: 700; text-transform: none; letter-spacing: 0;",
+                    else: "color: var(--c-text-muted); text-transform: none; letter-spacing: 0;"
+                }
+              >
+                {if @nombre_empleado, do: @nombre_empleado, else: @current_scope.user.email}
+              </.link>
 
-          <%!-- Link empleados (admin) --%>
-          <.nav_link href="/empleados" current_path={@current_path}>Equipo</.nav_link>
+              <%!-- No-admin: botón que abre el mini-modal de perfil rápido --%>
+            <% true -> %>
+              <button
+                type="button"
+                phx-click="abrir_perfil_modal"
+                style={
+                  if @perfil_modal_open,
+                    do:
+                      "color: var(--c-text-primary); font-weight: 700; text-transform: none; letter-spacing: 0; background: none; border: none; cursor: pointer; padding: 0;",
+                    else:
+                      "color: var(--c-text-muted); text-transform: none; letter-spacing: 0; background: none; border: none; cursor: pointer; padding: 0;"
+                }
+              >
+                {if @nombre_empleado, do: @nombre_empleado, else: @current_scope.user.email}
+              </button>
+          <% end %>
+
+          <%!-- Link empleados — solo visible para admin --%>
+          <%= if @es_admin do %>
+            <.nav_link href="/empleados" current_path={@current_path}>Equipo</.nav_link>
+          <% end %>
 
           <.link
             href={~p"/users/log-out"}

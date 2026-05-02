@@ -102,11 +102,52 @@ defmodule TiendaAlbumes.Accounts do
 
   ## Email (mantenido para settings/change email)
 
+  def deliver_login_instructions(%User{} = user, login_url_fun)
+      when is_function(login_url_fun, 1) do
+    {encoded_token, user_token} = UserToken.build_email_token(user, "login")
+    Repo.insert!(user_token)
+    UserNotifier.deliver_login_instructions(user, login_url_fun.(encoded_token))
+  end
+
   def deliver_user_update_email_instructions(%User{} = user, current_email, update_email_url_fun)
       when is_function(update_email_url_fun, 1) do
     {encoded_token, user_token} = UserToken.build_email_token(user, "change:#{current_email}")
     Repo.insert!(user_token)
     UserNotifier.deliver_update_email_instructions(user, update_email_url_fun.(encoded_token))
+  end
+
+  ## Magic link
+
+  def get_user_by_magic_link_token(token) do
+    with {:ok, query} <- UserToken.verify_magic_link_token_query(token),
+         {user, _user_token} <- Repo.one(query) do
+      user
+    else
+      _ -> nil
+    end
+  end
+
+  def login_user_by_magic_link(token) do
+    Repo.transact(fn ->
+      with {:ok, query} <- UserToken.verify_magic_link_token_query(token),
+           {%User{} = user, %UserToken{} = user_token} <- Repo.one(query) do
+        cond do
+          is_nil(user.confirmed_at) and not is_nil(user.hashed_password) ->
+            raise "magic link log in is not allowed for users with a password"
+
+          is_nil(user.confirmed_at) ->
+            user
+            |> User.confirm_changeset()
+            |> update_user_and_delete_all_tokens()
+
+          true ->
+            Repo.delete!(user_token)
+            {:ok, {user, []}}
+        end
+      else
+        _ -> {:error, :not_found}
+      end
+    end)
   end
 
   ## Token helper

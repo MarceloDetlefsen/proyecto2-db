@@ -107,7 +107,6 @@ defmodule TiendaAlbumesWeb.PerfilLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} current_path={@current_path}>
-
       <%!-- Encabezado --%>
       <div class="mb-6">
         <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);">
@@ -119,7 +118,6 @@ defmodule TiendaAlbumesWeb.PerfilLive do
       </div>
 
       <div class="grid grid-cols-2 gap-6">
-
         <%!-- Tarjeta: datos del empleado --%>
         <div
           class="rounded-box border p-6"
@@ -199,7 +197,6 @@ defmodule TiendaAlbumesWeb.PerfilLive do
             Cambiar contraseña
           </button>
         </div>
-
       </div>
 
       <%!-- MODAL: editar teléfono --%>
@@ -216,7 +213,10 @@ defmodule TiendaAlbumesWeb.PerfilLive do
               <h2 style="font-family: Georgia, serif; font-size: 1.1rem; font-weight: 700; color: var(--c-text-primary);">
                 Editar teléfono
               </h2>
-              <button phx-click="cerrar_modal" style="color: var(--c-text-muted); cursor: pointer; background: none; border: none; font-size: 16px;">
+              <button
+                phx-click="cerrar_modal"
+                style="color: var(--c-text-muted); cursor: pointer; background: none; border: none; font-size: 16px;"
+              >
                 ✕
               </button>
             </div>
@@ -234,7 +234,10 @@ defmodule TiendaAlbumesWeb.PerfilLive do
                   style="width: 100%; padding: 6px 10px; font-size: 13px; border-radius: 4px; border: 1px solid var(--c-border); background-color: var(--c-bg-surface); color: var(--c-text-primary); outline: none;"
                 />
               </div>
-              <div class="flex gap-3 justify-end" style="border-top: 1px solid var(--c-border); padding-top: 14px;">
+              <div
+                class="flex gap-3 justify-end"
+                style="border-top: 1px solid var(--c-border); padding-top: 14px;"
+              >
                 <button
                   type="button"
                   phx-click="cerrar_modal"
@@ -268,7 +271,10 @@ defmodule TiendaAlbumesWeb.PerfilLive do
               <h2 style="font-family: Georgia, serif; font-size: 1.1rem; font-weight: 700; color: var(--c-text-primary);">
                 Cambiar contraseña
               </h2>
-              <button phx-click="cerrar_modal" style="color: var(--c-text-muted); cursor: pointer; background: none; border: none; font-size: 16px;">
+              <button
+                phx-click="cerrar_modal"
+                style="color: var(--c-text-muted); cursor: pointer; background: none; border: none; font-size: 16px;"
+              >
                 ✕
               </button>
             </div>
@@ -299,7 +305,10 @@ defmodule TiendaAlbumesWeb.PerfilLive do
               <p style="font-size: 11px; color: var(--c-text-faint); margin-bottom: 14px;">
                 Mínimo 12 caracteres.
               </p>
-              <div class="flex gap-3 justify-end" style="border-top: 1px solid var(--c-border); padding-top: 14px;">
+              <div
+                class="flex gap-3 justify-end"
+                style="border-top: 1px solid var(--c-border); padding-top: 14px;"
+              >
                 <button
                   type="button"
                   phx-click="cerrar_modal"
@@ -318,7 +327,6 @@ defmodule TiendaAlbumesWeb.PerfilLive do
           </div>
         </div>
       <% end %>
-
     </Layouts.app>
     """
   end

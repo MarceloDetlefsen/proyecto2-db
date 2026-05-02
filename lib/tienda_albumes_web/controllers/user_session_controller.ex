@@ -31,7 +31,10 @@ defmodule TiendaAlbumesWeb.UserSessionController do
 
       {:error, :sin_empleado} ->
         conn
-        |> put_flash(:error, "Tu cuenta no está vinculada a ningún empleado. Contacta al administrador.")
+        |> put_flash(
+          :error,
+          "Tu cuenta no está vinculada a ningún empleado. Contacta al administrador."
+        )
         |> put_flash(:email, String.slice(email, 0, 160))
         |> redirect(to: ~p"/users/log-in")
     end

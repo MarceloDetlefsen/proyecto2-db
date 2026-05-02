@@ -10,7 +10,6 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
       <div class="mx-auto max-w-sm">
-
         <%!-- Encabezado --%>
         <div class="text-center mb-6">
           <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted); margin-bottom: 8px;">
@@ -47,12 +46,9 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
         <% else %>
           <%!-- Formulario --%>
           <.form for={@form} id="registration_form" phx-submit="save" phx-change="validate">
-
             <%!-- Selector de empleado --%>
             <div class="mb-4">
-              <label
-                style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;"
-              >
+              <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
                 Empleado *
               </label>
               <select
@@ -160,10 +156,8 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
             >
               Crear cuenta
             </button>
-
           </.form>
         <% end %>
-
       </div>
     </Layouts.app>
     """

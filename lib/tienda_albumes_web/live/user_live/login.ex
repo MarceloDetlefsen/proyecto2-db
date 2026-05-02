@@ -112,8 +112,8 @@ defmodule TiendaAlbumesWeb.UserLive.Login do
   def mount(_params, _session, socket) do
     email =
       Phoenix.Flash.get(socket.assigns.flash, :email) ||
-        socket.assigns.current_scope && socket.assigns.current_scope.user &&
-        socket.assigns.current_scope.user.email
+        (socket.assigns.current_scope && socket.assigns.current_scope.user &&
+           socket.assigns.current_scope.user.email)
 
     form = to_form(%{"email" => email}, as: "user")
     {:ok, assign(socket, form: form, trigger_submit: false)}

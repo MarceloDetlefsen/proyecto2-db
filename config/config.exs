@@ -62,7 +62,10 @@ config :tailwind,
       --input=assets/css/app.css
       --output=priv/static/assets/css/app.css
     ),
-    cd: Path.expand("..", __DIR__)
+    cd: Path.expand("..", __DIR__),
+    env: %{
+      "PATH" => "#{Path.expand("../bin", __DIR__)}:#{System.get_env("PATH", "")}"
+    }
   ]
 
 # Configure Elixir's Logger

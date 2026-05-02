@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Tailwind v4 tries to invoke watchman when running in --watch mode.
+# Returning a non-zero status here makes it fall back cleanly without
+# requiring watchman to be installed globally.
+exit 1
