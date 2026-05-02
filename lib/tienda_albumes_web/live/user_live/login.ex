@@ -40,27 +40,46 @@ defmodule TiendaAlbumesWeb.UserLive.Login do
           phx-submit="submit_password"
           phx-trigger-action={@trigger_submit}
         >
+          <%!-- Email --%>
           <div class="mb-3">
-            <.input
-              field={@form[:email]}
+            <label
+              for={@form[:email].id}
+              style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;"
+            >
+              Email
+            </label>
+            <input
+              id={@form[:email].id}
+              name={@form[:email].name}
               type="email"
-              label="Email"
+              value={@form[:email].value || ""}
               autocomplete="username"
               spellcheck="false"
               required
               readonly={!!@current_scope}
+              class="input input-sm w-full"
+              style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
               phx-mounted={JS.focus()}
             />
           </div>
 
+          <%!-- Contraseña --%>
           <div class="mb-5">
-            <.input
-              field={@form[:password]}
+            <label
+              for={@form[:password].id}
+              style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;"
+            >
+              Contraseña
+            </label>
+            <input
+              id={@form[:password].id}
+              name={@form[:password].name}
               type="password"
-              label="Contraseña"
               autocomplete="current-password"
               spellcheck="false"
               required
+              class="input input-sm w-full"
+              style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
             />
           </div>
 

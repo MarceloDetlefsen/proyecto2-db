@@ -2,6 +2,7 @@ defmodule TiendaAlbumesWeb.UserSessionController do
   use TiendaAlbumesWeb, :controller
 
   alias TiendaAlbumes.Accounts
+  alias TiendaAlbumes.Repo
   alias TiendaAlbumesWeb.UserAuth
 
   def create(conn, %{"_action" => "confirmed"} = params) do
@@ -33,16 +34,33 @@ defmodule TiendaAlbumesWeb.UserSessionController do
   defp create(conn, %{"user" => user_params}, info) do
     %{"email" => email, "password" => password} = user_params
 
-    if user = Accounts.get_user_by_email_and_password(email, password) do
+    with user when not is_nil(user) <- Accounts.get_user_by_email_and_password(email, password),
+         :ok <- verificar_empleado(user.id) do
       conn
       |> put_flash(:info, info)
       |> UserAuth.log_in_user(user, user_params)
     else
-      # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
-      conn
-      |> put_flash(:error, "Invalid email or password")
-      |> put_flash(:email, String.slice(email, 0, 160))
-      |> redirect(to: ~p"/users/log-in")
+      nil ->
+        conn
+        |> put_flash(:error, "Email o contraseña incorrectos.")
+        |> put_flash(:email, String.slice(email, 0, 160))
+        |> redirect(to: ~p"/users/log-in")
+
+      {:error, :sin_empleado} ->
+        conn
+        |> put_flash(:error, "Tu cuenta no está vinculada a ningún empleado. Contacta al administrador.")
+        |> put_flash(:email, String.slice(email, 0, 160))
+        |> redirect(to: ~p"/users/log-in")
+    end
+  end
+
+  defp verificar_empleado(user_id) do
+    case Repo.query(
+           "SELECT id_empleado FROM empleado WHERE user_id = $1 LIMIT 1",
+           [user_id]
+         ) do
+      {:ok, %{rows: [_]}} -> :ok
+      _ -> {:error, :sin_empleado}
     end
   end
 
@@ -51,7 +69,6 @@ defmodule TiendaAlbumesWeb.UserSessionController do
     true = Accounts.sudo_mode?(user)
     {:ok, {_user, expired_tokens}} = Accounts.update_user_password(user, user_params)
 
-    # disconnect all existing LiveViews with old sessions
     UserAuth.disconnect_sessions(expired_tokens)
 
     conn
