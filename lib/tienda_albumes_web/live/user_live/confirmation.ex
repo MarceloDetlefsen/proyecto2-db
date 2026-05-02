@@ -1,8 +1,6 @@
 defmodule TiendaAlbumesWeb.UserLive.Confirmation do
   use TiendaAlbumesWeb, :live_view
 
-  alias TiendaAlbumes.Accounts
-
   @impl true
   def render(assigns) do
     ~H"""
@@ -73,18 +71,11 @@ defmodule TiendaAlbumesWeb.UserLive.Confirmation do
   end
 
   @impl true
-  def mount(%{"token" => token}, _session, socket) do
-    if user = Accounts.get_user_by_magic_link_token(token) do
-      form = to_form(%{"token" => token}, as: "user")
-
-      {:ok, assign(socket, user: user, form: form, trigger_submit: false),
-       temporary_assigns: [form: nil]}
-    else
-      {:ok,
-       socket
-       |> put_flash(:error, "Magic link is invalid or it has expired.")
-       |> push_navigate(to: ~p"/users/log-in")}
-    end
+  def mount(_params, _session, socket) do
+    {:ok,
+     socket
+     |> put_flash(:error, "Este método ya no está disponible. Inicia sesión con correo y contraseña.")
+     |> push_navigate(to: ~p"/users/log-in")}
   end
 
   @impl true
