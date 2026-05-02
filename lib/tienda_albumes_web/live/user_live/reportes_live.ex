@@ -571,9 +571,17 @@ defmodule TiendaAlbumesWeb.ReportesLive do
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted);">
               {length(@productos_mas_vendidos)} productos
             </p>
-            <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
-              JOIN 5 tablas · GROUP BY · SUM(cantidad) · ORDER BY total vendido
-            </p>
+            <div class="flex items-center gap-4">
+              <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
+                JOIN 5 tablas · GROUP BY · SUM(cantidad) · ORDER BY total vendido
+              </p>
+              <a
+                href={"/reportes/csv/productos_mas_vendidos?formato=#{@filtros["formato"]}"}
+                style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-text-primary); font-weight: 600; border: 1px solid var(--c-border); padding: 3px 10px; border-radius: 4px; text-decoration: none;"
+              >
+                ↓ CSV
+              </a>
+            </div>
           </div>
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
@@ -674,9 +682,17 @@ defmodule TiendaAlbumesWeb.ReportesLive do
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted);">
               {length(@ingresos_periodo)} períodos
             </p>
-            <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
-              CTE (WITH ventas_mensuales) · SUM() OVER (acumulado) · GROUP BY año/mes
-            </p>
+            <div class="flex items-center gap-4">
+              <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
+                CTE (WITH ventas_mensuales) · SUM() OVER (acumulado) · GROUP BY año/mes
+              </p>
+              <a
+                href={"/reportes/csv/ingresos_periodo?anio=#{@filtros["anio"]}"}
+                style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-text-primary); font-weight: 600; border: 1px solid var(--c-border); padding: 3px 10px; border-radius: 4px; text-decoration: none;"
+              >
+                ↓ CSV
+              </a>
+            </div>
           </div>
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
@@ -744,9 +760,17 @@ defmodule TiendaAlbumesWeb.ReportesLive do
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted);">
               {length(@margen_producto)} productos
             </p>
-            <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
-              JOIN producto → producto_proveedor · HAVING margen % ≥ filtro · ORDER BY margen %
-            </p>
+            <div class="flex items-center gap-4">
+              <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
+                JOIN producto → producto_proveedor · HAVING margen % ≥ filtro · ORDER BY margen %
+              </p>
+              <a
+                href={"/reportes/csv/margen_producto?margen_min=#{@filtros["margen_min"]}"}
+                style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-text-primary); font-weight: 600; border: 1px solid var(--c-border); padding: 3px 10px; border-radius: 4px; text-decoration: none;"
+              >
+                ↓ CSV
+              </a>
+            </div>
           </div>
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
@@ -841,9 +865,17 @@ defmodule TiendaAlbumesWeb.ReportesLive do
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted);">
               {length(@empleados_ventas)} empleados
             </p>
-            <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
-              GROUP BY empleado · HAVING COUNT(ventas) ≥ filtro · SUM() · ORDER BY total vendido
-            </p>
+            <div class="flex items-center gap-4">
+              <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
+                GROUP BY empleado · HAVING COUNT(ventas) ≥ filtro · SUM() · ORDER BY total vendido
+              </p>
+              <a
+                href={"/reportes/csv/empleados_ventas?min_ventas=#{@filtros["min_ventas"]}"}
+                style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-text-primary); font-weight: 600; border: 1px solid var(--c-border); padding: 3px 10px; border-radius: 4px; text-decoration: none;"
+              >
+                ↓ CSV
+              </a>
+            </div>
           </div>
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">
@@ -911,9 +943,17 @@ defmodule TiendaAlbumesWeb.ReportesLive do
             <p style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted);">
               {length(@generos_vendidos)} géneros
             </p>
-            <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
-              JOIN 6 tablas incl. self-join género padre · GROUP BY · COUNT(DISTINCT álbumes)
-            </p>
+            <div class="flex items-center gap-4">
+              <p style="font-size: 10px; color: var(--c-text-faint); font-style: italic;">
+                JOIN 6 tablas incl. self-join género padre · GROUP BY · COUNT(DISTINCT álbumes)
+              </p>
+              <a
+                href={"/reportes/csv/generos_vendidos?genero_padre=#{@filtros["genero_padre"]}"}
+                style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-text-primary); font-weight: 600; border: 1px solid var(--c-border); padding: 3px 10px; border-radius: 4px; text-decoration: none;"
+              >
+                ↓ CSV
+              </a>
+            </div>
           </div>
           <table class="table table-sm w-full" style="background-color: var(--c-bg-page);">
             <thead style="background-color: var(--c-bg-surface);">

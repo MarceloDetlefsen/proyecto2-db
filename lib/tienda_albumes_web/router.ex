@@ -70,5 +70,10 @@ defmodule TiendaAlbumesWeb.Router do
 
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
+    get "/reportes/csv/productos_mas_vendidos", ReportesController, :productos_mas_vendidos
+    get "/reportes/csv/ingresos_periodo", ReportesController, :ingresos_periodo
+    get "/reportes/csv/margen_producto", ReportesController, :margen_producto
+    get "/reportes/csv/empleados_ventas", ReportesController, :empleados_ventas
+    get "/reportes/csv/generos_vendidos", ReportesController, :generos_vendidos
   end
 end
