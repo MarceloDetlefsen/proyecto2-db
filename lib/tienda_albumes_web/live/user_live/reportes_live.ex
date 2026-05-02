@@ -577,6 +577,7 @@ defmodule TiendaAlbumesWeb.ReportesLive do
               </p>
               <a
                 href={"/reportes/csv/productos_mas_vendidos?formato=#{@filtros["formato"]}"}
+                target="_blank"
                 style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-text-primary); font-weight: 600; border: 1px solid var(--c-border); padding: 3px 10px; border-radius: 4px; text-decoration: none;"
               >
                 ↓ CSV
@@ -689,6 +690,7 @@ defmodule TiendaAlbumesWeb.ReportesLive do
               <a
                 href={"/reportes/csv/ingresos_periodo?anio=#{@filtros["anio"]}"}
                 style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-text-primary); font-weight: 600; border: 1px solid var(--c-border); padding: 3px 10px; border-radius: 4px; text-decoration: none;"
+                target="_blank"
               >
                 ↓ CSV
               </a>
@@ -766,6 +768,7 @@ defmodule TiendaAlbumesWeb.ReportesLive do
               </p>
               <a
                 href={"/reportes/csv/margen_producto?margen_min=#{@filtros["margen_min"]}"}
+                target="_blank"
                 style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-text-primary); font-weight: 600; border: 1px solid var(--c-border); padding: 3px 10px; border-radius: 4px; text-decoration: none;"
               >
                 ↓ CSV
@@ -872,6 +875,7 @@ defmodule TiendaAlbumesWeb.ReportesLive do
               <a
                 href={"/reportes/csv/empleados_ventas?min_ventas=#{@filtros["min_ventas"]}"}
                 style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-text-primary); font-weight: 600; border: 1px solid var(--c-border); padding: 3px 10px; border-radius: 4px; text-decoration: none;"
+                target="_blank"
               >
                 ↓ CSV
               </a>
@@ -949,6 +953,7 @@ defmodule TiendaAlbumesWeb.ReportesLive do
               </p>
               <a
                 href={"/reportes/csv/generos_vendidos?genero_padre=#{@filtros["genero_padre"]}"}
+                target="_blank"
                 style="font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--c-text-primary); font-weight: 600; border: 1px solid var(--c-border); padding: 3px 10px; border-radius: 4px; text-decoration: none;"
               >
                 ↓ CSV
