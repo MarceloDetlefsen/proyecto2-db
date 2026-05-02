@@ -32,7 +32,10 @@ defmodule TiendaAlbumesWeb.Router do
     pipe_through [:browser, :require_authenticated_user]
 
     live_session :require_authenticated_user,
-      on_mount: [{TiendaAlbumesWeb.UserAuth, :require_authenticated}] do
+      on_mount: [
+        {TiendaAlbumesWeb.UserAuth, :require_authenticated},
+        {TiendaAlbumesWeb.PerfilModal, :init}
+      ] do
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
       live "/perfil", PerfilLive, :index
@@ -48,7 +51,10 @@ defmodule TiendaAlbumesWeb.Router do
     pipe_through [:browser]
 
     live_session :current_user,
-      on_mount: [{TiendaAlbumesWeb.UserAuth, :mount_current_scope}] do
+      on_mount: [
+        {TiendaAlbumesWeb.UserAuth, :mount_current_scope},
+        {TiendaAlbumesWeb.PerfilModal, :init}
+      ] do
       live "/", HomeLive, :index
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new

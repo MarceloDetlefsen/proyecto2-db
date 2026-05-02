@@ -20,6 +20,32 @@ defmodule TiendaAlbumesWeb.PerfilModal do
   alias TiendaAlbumes.Repo
   alias TiendaAlbumes.Accounts
 
+  @perfil_modal_events [
+    "abrir_perfil_modal",
+    "cerrar_perfil_modal",
+    "perfil_tab",
+    "perfil_guardar_password",
+    "perfil_guardar_telefono"
+  ]
+
+  def on_mount(:init, _params, _session, socket) do
+    socket =
+      socket
+      |> init_assigns()
+      |> attach_hook(:perfil_modal_events, :handle_event, fn event, params, socket ->
+        if event in @perfil_modal_events do
+          case handle_event(event, params, socket) do
+            {:noreply, socket} -> {:halt, socket}
+            other -> other
+          end
+        else
+          {:cont, socket}
+        end
+      end)
+
+    {:cont, socket}
+  end
+
   @doc "Inicializa los assigns del modal de perfil en el socket"
   def init_assigns(socket) do
     socket

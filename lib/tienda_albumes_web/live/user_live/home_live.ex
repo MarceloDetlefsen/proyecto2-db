@@ -123,7 +123,14 @@ defmodule TiendaAlbumesWeb.HomeLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} current_path={@current_path}>
+    <Layouts.app
+      flash={@flash}
+      current_scope={@current_scope}
+      current_path={@current_path}
+      perfil_modal_open={@perfil_modal_open}
+      perfil_tab={@perfil_tab}
+      perfil_error={@perfil_error}
+    >
       <%!-- HERO --%>
       <div
         class="rounded-box border p-8 mb-8 flex items-center justify-between overflow-hidden"

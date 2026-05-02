@@ -8,6 +8,9 @@ defmodule TiendaAlbumesWeb.Layouts do
   attr :flash, :map, required: true
   attr :current_scope, :map, default: nil
   attr :current_path, :string, default: ""
+  attr :perfil_modal_open, :boolean, default: false
+  attr :perfil_tab, :string, default: "password"
+  attr :perfil_error, :string, default: nil
   slot :inner_block, required: true
 
   def app(assigns) do

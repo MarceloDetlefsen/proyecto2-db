@@ -8,7 +8,13 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app
+      flash={@flash}
+      current_scope={@current_scope}
+      perfil_modal_open={@perfil_modal_open}
+      perfil_tab={@perfil_tab}
+      perfil_error={@perfil_error}
+    >
       <div class="mx-auto max-w-sm">
         <%!-- Encabezado --%>
         <div class="text-center mb-6">
