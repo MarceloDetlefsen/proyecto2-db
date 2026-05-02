@@ -5,37 +5,39 @@ defmodule TiendaAlbumesWeb.Layouts do
   """
   use TiendaAlbumesWeb, :html
 
-  # Embed all files in layouts/* within this module.
-  # The default root.html.heex file contains the HTML
-  # skeleton of your application, namely HTML headers
-  # and other static content.
+  alias TiendaAlbumes.Repo
+
   embed_templates "layouts/*"
 
-  @doc """
-  Renders your app layout.
-
-  This function is typically invoked from every template,
-  and it often contains your application menu, sidebar,
-  or similar.
-
-  ## Examples
-
-      <Layouts.app flash={@flash}>
-        <h1>Content</h1>
-      </Layouts.app>
-
-  """
   attr :flash, :map, required: true, doc: "the map of flash messages"
 
   attr :current_scope, :map,
     default: nil,
-    doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
+    doc: "the current scope"
 
   attr :current_path, :string, default: ""
 
   slot :inner_block, required: true
 
   def app(assigns) do
+    # Si hay usuario logueado, buscar si tiene un empleado vinculado
+    nombre_empleado =
+      case assigns[:current_scope] do
+        %{user: %{id: user_id}} when not is_nil(user_id) ->
+          case Repo.query(
+                 "SELECT nombre FROM empleado WHERE user_id = $1 LIMIT 1",
+                 [user_id]
+               ) do
+            {:ok, %{rows: [[nombre]]}} -> nombre
+            _ -> nil
+          end
+
+        _ ->
+          nil
+      end
+
+    assigns = assign(assigns, :nombre_empleado, nombre_empleado)
+
     ~H"""
     <header
       class="border-b px-6 py-3 flex items-center justify-between"
@@ -111,12 +113,16 @@ defmodule TiendaAlbumesWeb.Layouts do
         <div class="w-px h-4" style="background-color: var(--c-border);"></div>
         <%= if @current_scope do %>
           <span style="color: var(--c-text-muted); text-transform: none; letter-spacing: 0;">
-            {@current_scope.user.email}
+            <%= if @nombre_empleado do %>
+              {@nombre_empleado}
+            <% else %>
+              {@current_scope.user.email}
+            <% end %>
           </span>
           <.link
             href={~p"/users/log-out"}
             method="delete"
-            style="color: var(--c-danger); font-weight: 600;"
+            style="color: #5a7a3a; font-weight: 600;"
           >
             Salir
           </.link>
@@ -137,13 +143,6 @@ defmodule TiendaAlbumesWeb.Layouts do
     """
   end
 
-  @doc """
-  Shows the flash group with standard titles and content.
-
-  ## Examples
-
-      <.flash_group flash={@flash} />
-  """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :id, :string, default: "flash-group", doc: "the optional id of flash container"
 
@@ -180,11 +179,6 @@ defmodule TiendaAlbumesWeb.Layouts do
     """
   end
 
-  @doc """
-  Provides dark vs light theme toggle based on themes defined in app.css.
-
-  See <head> in root.html.heex which applies the theme before page load.
-  """
   def theme_toggle(assigns) do
     ~H"""
     <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">

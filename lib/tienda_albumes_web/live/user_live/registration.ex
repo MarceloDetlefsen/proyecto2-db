@@ -72,6 +72,7 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
               id={@form[:password].id}
               name={@form[:password].name}
               type="password"
+              value={@form[:password].value}
               autocomplete="new-password"
               spellcheck="false"
               required
@@ -98,6 +99,7 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
               id={@form[:password_confirmation].id}
               name={@form[:password_confirmation].name}
               type="password"
+              value={@form[:password_confirmation].value}
               autocomplete="new-password"
               spellcheck="false"
               class="input input-sm w-full"
@@ -135,7 +137,7 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
 
   def mount(_params, _session, socket) do
     changeset = Accounts.change_user_registration(%User{}, %{})
-    {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]}
+    {:ok, assign_form(socket, changeset)}
   end
 
   @impl true

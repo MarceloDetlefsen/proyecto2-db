@@ -49,7 +49,6 @@ defmodule TiendaAlbumesWeb.UserLive.Login do
               spellcheck="false"
               required
               readonly={!!@current_scope}
-              class="input input-sm w-full"
               phx-mounted={JS.focus()}
             />
           </div>
@@ -62,7 +61,6 @@ defmodule TiendaAlbumesWeb.UserLive.Login do
               autocomplete="current-password"
               spellcheck="false"
               required
-              class="input input-sm w-full"
             />
           </div>
 
