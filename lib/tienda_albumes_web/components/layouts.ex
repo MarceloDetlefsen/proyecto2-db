@@ -1,26 +1,16 @@
 defmodule TiendaAlbumesWeb.Layouts do
-  @moduledoc """
-  This module holds layouts and related functionality
-  used by your application.
-  """
   use TiendaAlbumesWeb, :html
 
   alias TiendaAlbumes.Repo
 
   embed_templates "layouts/*"
 
-  attr :flash, :map, required: true, doc: "the map of flash messages"
-
-  attr :current_scope, :map,
-    default: nil,
-    doc: "the current scope"
-
+  attr :flash, :map, required: true
+  attr :current_scope, :map, default: nil
   attr :current_path, :string, default: ""
-
   slot :inner_block, required: true
 
   def app(assigns) do
-    # Si hay usuario logueado, buscar si tiene un empleado vinculado
     nombre_empleado =
       case assigns[:current_scope] do
         %{user: %{id: user_id}} when not is_nil(user_id) ->
@@ -63,9 +53,7 @@ defmodule TiendaAlbumesWeb.Layouts do
               <stop offset="100%" stop-color="#8fa660" />
             </radialGradient>
           </defs>
-
           <circle cx="110" cy="110" r="94" fill="url(#navVinylGrad)" />
-
           <%= for r <- [84, 74, 64, 54, 44] do %>
             <circle
               cx="110"
@@ -77,7 +65,6 @@ defmodule TiendaAlbumesWeb.Layouts do
               opacity="0.55"
             />
           <% end %>
-
           <circle cx="110" cy="110" r="28" fill="url(#navLabelGrad)" />
           <circle cx="110" cy="110" r="4" fill="#0f1a06" />
           <circle cx="110" cy="110" r="2.5" fill="#243318" />
@@ -96,29 +83,32 @@ defmodule TiendaAlbumesWeb.Layouts do
         class="flex items-center gap-6"
         style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase;"
       >
-        <.nav_link href="/inventario" current_path={@current_path}>
-          Inventario
-        </.nav_link>
-        <.nav_link href="/ventas" current_path={@current_path}>
-          Ventas
-        </.nav_link>
-        <.nav_link href="/clientes" current_path={@current_path}>
-          Clientes
-        </.nav_link>
-        <.nav_link href="/reportes" current_path={@current_path}>
-          Reportes
-        </.nav_link>
+        <.nav_link href="/inventario" current_path={@current_path}>Inventario</.nav_link>
+        <.nav_link href="/ventas" current_path={@current_path}>Ventas</.nav_link>
+        <.nav_link href="/clientes" current_path={@current_path}>Clientes</.nav_link>
+        <.nav_link href="/reportes" current_path={@current_path}>Reportes</.nav_link>
+
         <div class="w-px h-4" style="background-color: var(--c-border);"></div>
         <.theme_toggle />
         <div class="w-px h-4" style="background-color: var(--c-border);"></div>
+
         <%= if @current_scope do %>
-          <span style="color: var(--c-text-muted); text-transform: none; letter-spacing: 0;">
-            <%= if @nombre_empleado do %>
-              {@nombre_empleado}
-            <% else %>
-              {@current_scope.user.email}
-            <% end %>
-          </span>
+          <%!-- Nombre o email con link al perfil --%>
+          <.link
+            href="/perfil"
+            style={
+              if String.starts_with?(@current_path, "/perfil"),
+                do:
+                  "color: var(--c-text-primary); font-weight: 700; text-transform: none; letter-spacing: 0;",
+                else: "color: var(--c-text-muted); text-transform: none; letter-spacing: 0;"
+            }
+          >
+            {if @nombre_empleado, do: @nombre_empleado, else: @current_scope.user.email}
+          </.link>
+
+          <%!-- Link empleados (admin) --%>
+          <.nav_link href="/empleados" current_path={@current_path}>Equipo</.nav_link>
+
           <.link
             href={~p"/users/log-out"}
             method="delete"
@@ -143,15 +133,14 @@ defmodule TiendaAlbumesWeb.Layouts do
     """
   end
 
-  attr :flash, :map, required: true, doc: "the map of flash messages"
-  attr :id, :string, default: "flash-group", doc: "the optional id of flash container"
+  attr :flash, :map, required: true
+  attr :id, :string, default: "flash-group"
 
   def flash_group(assigns) do
     ~H"""
     <div id={@id} aria-live="polite">
       <.flash kind={:info} flash={@flash} />
       <.flash kind={:error} flash={@flash} />
-
       <.flash
         id="client-error"
         kind={:error}
@@ -163,7 +152,6 @@ defmodule TiendaAlbumesWeb.Layouts do
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
-
       <.flash
         id="server-error"
         kind={:error}
@@ -183,7 +171,6 @@ defmodule TiendaAlbumesWeb.Layouts do
     ~H"""
     <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
       <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
-
       <button
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
@@ -191,7 +178,6 @@ defmodule TiendaAlbumesWeb.Layouts do
       >
         <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
-
       <button
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}
@@ -199,7 +185,6 @@ defmodule TiendaAlbumesWeb.Layouts do
       >
         <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
-
       <button
         class="flex p-2 cursor-pointer w-1/3"
         phx-click={JS.dispatch("phx:set-theme")}

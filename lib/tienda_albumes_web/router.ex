@@ -27,7 +27,6 @@ defmodule TiendaAlbumesWeb.Router do
   end
 
   ## Rutas que requieren autenticación
-  ## Aquí van todas las rutas del sistema de gestión + settings
 
   scope "/", TiendaAlbumesWeb do
     pipe_through [:browser, :require_authenticated_user]
@@ -36,19 +35,14 @@ defmodule TiendaAlbumesWeb.Router do
       on_mount: [{TiendaAlbumesWeb.UserAuth, :require_authenticated}] do
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
-
-      # Rutas del sistema — requieren login y empleado vinculado
-      live "/inventario", InventarioLive, :index
-      live "/ventas", VentasLive, :index
-      live "/clientes", ClientesLive, :index
-      live "/reportes", ReportesLive, :index
+      live "/perfil", PerfilLive, :index
+      live "/empleados", EmpleadosLive, :index
     end
 
     post "/users/update-password", UserSessionController, :update_password
   end
 
   ## Rutas públicas (con o sin sesión)
-  ## Solo home, login y registro son públicos
 
   scope "/", TiendaAlbumesWeb do
     pipe_through [:browser]
@@ -58,6 +52,10 @@ defmodule TiendaAlbumesWeb.Router do
       live "/", HomeLive, :index
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new
+      live "/inventario", InventarioLive, :index
+      live "/ventas", VentasLive, :index
+      live "/clientes", ClientesLive, :index
+      live "/reportes", ReportesLive, :index
     end
 
     post "/users/log-in", UserSessionController, :create
