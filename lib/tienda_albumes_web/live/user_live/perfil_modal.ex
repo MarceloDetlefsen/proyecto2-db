@@ -34,10 +34,8 @@ defmodule TiendaAlbumesWeb.PerfilModal do
       |> init_assigns()
       |> attach_hook(:perfil_modal_events, :handle_event, fn event, params, socket ->
         if event in @perfil_modal_events do
-          case handle_event(event, params, socket) do
-            {:noreply, socket} -> {:halt, socket}
-            other -> other
-          end
+          {:noreply, socket} = handle_event(event, params, socket)
+          {:halt, socket}
         else
           {:cont, socket}
         end

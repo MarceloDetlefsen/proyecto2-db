@@ -239,14 +239,18 @@ defmodule TiendaAlbumesWeb.Layouts do
         class="flex items-center gap-6"
         style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase;"
       >
-        <.nav_link href="/inventario" current_path={@current_path}>Inventario</.nav_link>
-        <.nav_link href="/ventas" current_path={@current_path}>Ventas</.nav_link>
-        <.nav_link href="/clientes" current_path={@current_path}>Clientes</.nav_link>
-        <.nav_link href="/reportes" current_path={@current_path}>Reportes</.nav_link>
+        <%= if @current_scope do %>
+          <.nav_link href="/inventario" current_path={@current_path}>Inventario</.nav_link>
+          <.nav_link href="/ventas" current_path={@current_path}>Ventas</.nav_link>
+          <.nav_link href="/clientes" current_path={@current_path}>Clientes</.nav_link>
+          <.nav_link href="/reportes" current_path={@current_path}>Reportes</.nav_link>
 
-        <div class="w-px h-4" style="background-color: var(--c-border);"></div>
+          <div class="w-px h-4" style="background-color: var(--c-border);"></div>
+        <% end %>
         <.theme_toggle />
-        <div class="w-px h-4" style="background-color: var(--c-border);"></div>
+        <%= if @current_scope do %>
+          <div class="w-px h-4" style="background-color: var(--c-border);"></div>
+        <% end %>
 
         <%= if @current_scope do %>
           <%= cond do %>

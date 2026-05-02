@@ -40,6 +40,10 @@ defmodule TiendaAlbumesWeb.Router do
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
       live "/perfil", PerfilLive, :index
       live "/empleados", EmpleadosLive, :index
+      live "/inventario", InventarioLive, :index
+      live "/ventas", VentasLive, :index
+      live "/clientes", ClientesLive, :index
+      live "/reportes", ReportesLive, :index
     end
 
     post "/users/update-password", UserSessionController, :update_password
@@ -58,10 +62,6 @@ defmodule TiendaAlbumesWeb.Router do
       live "/", HomeLive, :index
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new
-      live "/inventario", InventarioLive, :index
-      live "/ventas", VentasLive, :index
-      live "/clientes", ClientesLive, :index
-      live "/reportes", ReportesLive, :index
     end
 
     post "/users/log-in", UserSessionController, :create
