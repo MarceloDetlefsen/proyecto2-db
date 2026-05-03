@@ -65,7 +65,9 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
               >
                 <option value="">Selecciona tu nombre...</option>
                 <%= for {nombre, puesto, id} <- @empleados_disponibles do %>
-                  <option value={id}>{nombre} — {puesto}</option>
+                  <option value={id} selected={to_string(id) == @id_empleado}>
+                    {nombre} — {puesto}
+                  </option>
                 <% end %>
               </select>
               <p style="font-size: 11px; color: var(--c-text-muted); margin-top: 4px;">
@@ -181,6 +183,7 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
     {:ok,
      socket
      |> assign(:empleados_disponibles, listar_empleados_sin_cuenta())
+     |> assign(:id_empleado, "")
      |> assign_form(changeset)}
   end
 
@@ -203,7 +206,10 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
          |> push_navigate(to: ~p"/users/log-in")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+        {:noreply,
+         socket
+         |> assign(:id_empleado, id_empleado_str)
+         |> assign_form(changeset)}
     end
   end
 
@@ -211,13 +217,18 @@ defmodule TiendaAlbumesWeb.UserLive.Registration do
     {:noreply, put_flash(socket, :error, "Debes seleccionar un empleado.")}
   end
 
-  def handle_event("validate", %{"user" => user_params}, socket) do
+  def handle_event("validate", %{"user" => user_params} = params, socket) do
+    id_empleado = Map.get(params, "id_empleado", "")
+
     changeset =
       %User{}
       |> Accounts.change_user_registration(user_params)
       |> Map.put(:action, :validate)
 
-    {:noreply, assign_form(socket, changeset)}
+    {:noreply,
+     socket
+     |> assign(:id_empleado, id_empleado)
+     |> assign_form(changeset)}
   end
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
