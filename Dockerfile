@@ -18,16 +18,17 @@ ENV MIX_ENV=prod
 RUN mix deps.get --only prod
 RUN mix deps.compile
 
-# Copiar assets y compilar
-COPY assets assets/
-RUN mix assets.deploy
-
-# Copiar el resto del código fuente
+# Copiar el código fuente de la app
 COPY priv priv/
 COPY lib lib/
 
 # Compilar la aplicación
 RUN mix compile
+
+# Copiar assets y compilar estáticos.
+# Debe ocurrir después de compilar para que exista phoenix-colocated/*.
+COPY assets assets/
+RUN MIX_ENV=prod mix assets.deploy
 
 # Generar release
 RUN mix release
