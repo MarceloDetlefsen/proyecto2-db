@@ -650,11 +650,16 @@ defmodule TiendaAlbumesWeb.ReportesLive do
                     <span
                       class="badge badge-sm"
                       style={
-                        if p.formato == "Vinilo",
-                          do:
-                            "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
-                          else:
+                        cond do
+                          p.formato == "Vinilo" ->
+                            "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;"
+
+                          p.formato == "Cassette" ->
+                            "background-color: var(--c-cassette-bg); color: var(--c-cassette-text); border: none;"
+
+                          true ->
                             "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
+                        end
                       }
                     >
                       {p.formato}
@@ -840,11 +845,16 @@ defmodule TiendaAlbumesWeb.ReportesLive do
                     <span
                       class="badge badge-sm"
                       style={
-                        if p.formato == "Vinilo",
-                          do:
-                            "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
-                          else:
+                        cond do
+                          p.formato == "Vinilo" ->
+                            "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;"
+
+                          p.formato == "Cassette" ->
+                            "background-color: var(--c-cassette-bg); color: var(--c-cassette-text); border: none;"
+
+                          true ->
                             "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
+                        end
                       }
                     >
                       {p.formato}

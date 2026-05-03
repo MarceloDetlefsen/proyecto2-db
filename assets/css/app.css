@@ -113,6 +113,8 @@
   --c-danger-border: #e8c8c0;
   --c-overlay:       rgba(42, 58, 26, 0.35);
   --c-vinyl:         #2a3a1a;
+  --c-cassette-bg:   #8b6f47;
+  --c-cassette-text: #f7f0e4;
 }
 
 /* ── Variables semánticas: OSCURO ──────────────────────────── */
@@ -132,6 +134,8 @@
   --c-danger-border: #4a2820;
   --c-overlay:       rgba(0, 0, 0, 0.55);
   --c-vinyl:         #c8d4a0;
+  --c-cassette-bg:   #6f5738;
+  --c-cassette-text: #f0e4cf;
 }
 
 /* ── System sigue la preferencia del SO ────────────────────── */
@@ -152,6 +156,8 @@
     --c-danger-border: #4a2820;
     --c-overlay:       rgba(0, 0, 0, 0.55);
     --c-vinyl:         #c8d4a0;
+    --c-cassette-bg:   #6f5738;
+    --c-cassette-text: #f0e4cf;
   }
 }
 
@@ -172,6 +178,8 @@
     --c-danger-border: #e8c8c0;
     --c-overlay:       rgba(42, 58, 26, 0.35);
     --c-vinyl:         #2a3a1a;
+    --c-cassette-bg:   #8b6f47;
+    --c-cassette-text: #f7f0e4;
   }
 }
 

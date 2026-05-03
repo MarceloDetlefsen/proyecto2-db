@@ -682,11 +682,16 @@ defmodule TiendaAlbumesWeb.VentasLive do
                       <span
                         class="badge badge-sm"
                         style={
-                          if item.formato == "Vinilo",
-                            do:
-                              "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;",
-                            else:
+                          cond do
+                            item.formato == "Vinilo" ->
+                              "background-color: var(--c-text-heading); color: var(--c-text-faint); border: none;"
+
+                            item.formato == "Cassette" ->
+                              "background-color: var(--c-cassette-bg); color: var(--c-cassette-text); border: none;"
+
+                            true ->
                               "background-color: var(--c-btn-sec-bg); color: var(--c-text-primary); border: none;"
+                          end
                         }
                       >
                         {item.formato}
