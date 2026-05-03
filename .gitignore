@@ -35,3 +35,6 @@ tienda_albumes-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Ignore .env files, which may contain sensitive data such as API keys or database credentials.
+.env
+
