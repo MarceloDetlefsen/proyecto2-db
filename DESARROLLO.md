@@ -88,14 +88,7 @@ mix ecto.migrate
 mix format lib/tienda_albumes_web/live/user_live
 ```
 
-## 8) Nota sobre Docker
-
-Este README cubre solo ejecucion local. El flujo con Docker se puede documentar aparte cuando este definido.
-
-## 👨‍💻 Autor
-Marcelo Detlefsen - 24554
-
-## 9) Pheonix Tools
+## 8) Pheonix Tools
 
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
 
