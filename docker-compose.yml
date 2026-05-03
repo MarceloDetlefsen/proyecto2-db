@@ -1,0 +1,56 @@
+services:
+
+  # ── Base de datos PostgreSQL ─────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-proy2}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      POSTGRES_DB: ${DB_NAME:-tienda_albumes_prod}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-proy2} -d ${DB_NAME:-tienda_albumes_prod}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app_network
+
+  # ── Aplicación Phoenix ───────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4000}:4000"
+    environment:
+      # Base de datos
+      DATABASE_URL: "ecto://${DB_USER:-proy2}:${DB_PASSWORD:-secret}@db:5432/${DB_NAME:-tienda_albumes_prod}"
+      # Phoenix
+      PHX_HOST: "${PHX_HOST:-localhost}"
+      PORT: "4000"
+      SECRET_KEY_BASE: "${SECRET_KEY_BASE}"
+      MIX_ENV: prod
+      # Migraciones y seeds al iniciar
+      RELEASE_COOKIE: "${RELEASE_COOKIE:-heritage_records_cookie}"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_network
+    command: >
+      sh -c "
+        bin/tienda_albumes eval 'TiendaAlbumes.Release.migrate()' &&
+        bin/tienda_albumes eval 'TiendaAlbumes.Release.seed()' &&
+        bin/tienda_albumes start
+      "
+
+volumes:
+  postgres_data:
+
+networks:
+  app_network:
+    driver: bridge
