@@ -5,18 +5,17 @@
 Heritage Records administra la operación diaria de una tienda de música enfocada en
 productos físicos como **vinilos, CDs y cassettes**. La aplicación permite:
 
-- consultar el estado general del negocio desde una pantalla principal;
-- gestionar inventario y catálogo de productos;
-- registrar ventas con detalle por producto;
-- administrar clientes;
-- generar reportes analíticos;
-- exportar resultados a **CSV**;
-- administrar cuentas de acceso vinculadas a empleados;
-- permitir que cada usuario gestione su propio perfil y contraseña.
+- Consultar el estado general del negocio desde una pantalla principal.
+- Gestionar inventario y catálogo de productos.
+- Registrar ventas con detalle por producto.
+- Administrar clientes.
+- Generar reportes analíticos.
+- Exportar resultados a **CSV**.
+- Administrar cuentas de acceso vinculadas a empleados.
+- Permitir que cada usuario gestione su propio perfil y contraseña.
 
-La base de datos fue diseñada desde cero y modela entidades como:
-**Artista, Álbum, Género, Formato, Producto, Proveedor, Producto_Proveedor,
-Cliente, Empleado, Compra y Detalle_Compra**.
+La estructura de la base de datos se puede apreciar a través del siguiente DER:
+![diagrama entidad relación](images/der.PNG)
 
 ## 2. Reglas de acceso y uso
 
@@ -99,6 +98,8 @@ Muestra:
 
 Sirve como punto de entrada, incluso antes de iniciar sesión.
 
+![home](images/start.png)
+
 ### Registro (`/users/register`)
 
 Permite crear una cuenta de acceso.
@@ -116,6 +117,8 @@ Reglas importantes:
 - si no hay empleados disponibles, el formulario se bloquea y se informa al usuario;
 - al completar el registro, la cuenta queda vinculada al empleado elegido.
 
+![register](images/register.png)
+
 ### Inicio de sesión (`/users/log-in`)
 
 Permite autenticarse con:
@@ -130,6 +133,8 @@ Opciones disponibles:
 
 Si el usuario ya está autenticado y necesita confirmar una acción sensible, la pantalla
 también funciona como reautenticación.
+
+![login](images/login.png)
 
 ### Inventario (`/inventario`)
 
@@ -149,6 +154,8 @@ Funciones disponibles:
 
 En esta sección el formato del producto se presenta visualmente con etiquetas distintas
 para **Vinilo**, **CD** y **Cassette**.
+
+![inventario](images/inventario.png)
 
 ### Ventas (`/ventas`)
 
@@ -171,6 +178,8 @@ Durante el registro de una venta, el sistema usa productos del inventario y mues
 - precio;
 - stock disponible.
 
+![ventas](images/ventas.png)
+
 ### Clientes (`/clientes`)
 
 Pantalla para gestionar la base de clientes.
@@ -184,6 +193,8 @@ Funciones disponibles:
 - editar clientes existentes;
 - eliminar clientes;
 - ver el perfil de un cliente con su información relevante.
+
+![clientes](images/clientes.png)
 
 ### Reportes (`/reportes`)
 
@@ -213,6 +224,8 @@ Además, la pantalla permite:
 - ver conteos de resultados por pestaña;
 - exportar cada reporte a **CSV**.
 
+![reportes](images/reportes.png)
+
 ### Exportación a CSV
 
 La exportación se hace desde la pantalla de **Reportes**.
@@ -239,6 +252,8 @@ Funciones disponibles:
 - cambiar contraseña.
 
 Si la cuenta no está vinculada correctamente a un empleado, la pantalla lo informa.
+
+![mi_perfil](images/mi_perfil.png)
 
 ### Perfil rápido en navbar
 
@@ -267,6 +282,8 @@ Funciones disponibles:
 - ver email vinculado y número de ventas por empleado.
 
 Si un usuario no gerente intenta acceder, es redirigido.
+
+![equipo](images/equipo.png)
 
 ## 5. Comportamiento funcional importante
 
