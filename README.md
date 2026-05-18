@@ -6,6 +6,7 @@ Desarrollado como Proyecto 2 del curso **cc3088 - Bases de Datos 1**, Ciclo 1, 2
 ## Documentación
 
 - Guía de uso completa: [MANUAL_USUARIO.md](MANUAL_USUARIO.md)
+- Explicación de los roles definidos: [ROLES.md](ROLES.md)
 - Guía de desarrollo local: [DESARROLLO.md](DESARROLLO.md)
 
 ## Requisitos para Docker
@@ -37,7 +38,7 @@ docker run --rm elixir:1.16-alpine mix phx.gen.secret
 El archivo `.env` mínimo funcional luce así:
 
 ```env
-DB_USER=proy2
+DB_USER=proy3
 DB_PASSWORD=secret
 DB_NAME=tienda_albumes_prod
 PHX_HOST=localhost
@@ -84,7 +85,7 @@ docker compose up --build
 
 | Campo    | Valor                  |
 |----------|------------------------|
-| Usuario  | `proy2`                |
+| Usuario  | `proy3`                |
 | Password | `secret`               |
 | Base de datos | `tienda_albumes_prod` |
 
