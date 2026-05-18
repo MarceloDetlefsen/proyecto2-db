@@ -2,9 +2,12 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   use TiendaAlbumesWeb, :live_view
 
   alias TiendaAlbumes.Repo
+  alias TiendaAlbumesWeb.RoleAccess
 
   @impl true
   def mount(_params, _session, socket) do
+    role = socket.assigns.current_scope.employee_role
+
     # Crea el VIEW automáticamente si no existe todavía
     crear_view_si_no_existe()
 
@@ -20,6 +23,10 @@ defmodule TiendaAlbumesWeb.InventarioLive do
         estadisticas: %{field: :valor, direction: :desc},
         artistas: %{field: :productos, direction: :desc}
       })
+      |> assign(:current_employee_role, role)
+      |> assign(:puede_crear_producto, RoleAccess.can_create_products?(role))
+      |> assign(:puede_editar_producto, RoleAccess.can_update_products?(role))
+      |> assign(:puede_eliminar_producto, RoleAccess.can_delete_products?(role))
       |> assign(:vista_activa, :inventario)
       |> assign(:filtros, %{
         "formato" => "",
@@ -82,12 +89,20 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   # ──────────────────────────────────────────────
 
   def handle_event("nuevo_producto", _params, socket) do
-    {:noreply, assign(socket, :modal, :nuevo)}
+    if socket.assigns.puede_crear_producto do
+      {:noreply, assign(socket, :modal, :nuevo)}
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   def handle_event("editar_producto", %{"id" => id}, socket) do
-    producto = obtener_producto(String.to_integer(id))
-    {:noreply, socket |> assign(:modal, :editar) |> assign(:producto_editando, producto)}
+    if socket.assigns.puede_editar_producto do
+      producto = obtener_producto(String.to_integer(id))
+      {:noreply, socket |> assign(:modal, :editar) |> assign(:producto_editando, producto)}
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   def handle_event("cerrar_modal", _params, socket) do
@@ -97,120 +112,140 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   # ── Crear producto con transacción explícita + ROLLBACK ──────────────────────
   # Requisito: al menos 1 transacción explícita con manejo de error y ROLLBACK
   def handle_event("guardar_producto", params, socket) do
-    %{
-      "id_album" => id_album,
-      "id_formato" => id_formato,
-      "precio" => precio,
-      "stock" => stock
-    } = params
+    if socket.assigns.puede_crear_producto do
+      %{
+        "id_album" => id_album,
+        "id_formato" => id_formato,
+        "precio" => precio,
+        "stock" => stock
+      } = params
 
-    # Verificamos que el álbum exista usando subquery con EXISTS (requisito subquery)
-    # y ejecutamos la inserción dentro de una transacción explícita con ROLLBACK.
-    result =
-      Repo.transaction(fn repo ->
-        # 1) Validar con subquery EXISTS que el álbum exista
-        existe_sql = """
-          SELECT EXISTS (
-            SELECT 1 FROM album WHERE id_album = $1
-          )
-        """
+      # Verificamos que el álbum exista usando subquery con EXISTS (requisito subquery)
+      # y ejecutamos la inserción dentro de una transacción explícita con ROLLBACK.
+      result =
+        Repo.transaction(fn repo ->
+          # 1) Validar con subquery EXISTS que el álbum exista
+          existe_sql = """
+            SELECT EXISTS (
+              SELECT 1 FROM album WHERE id_album = $1
+            )
+          """
 
-        case repo.query(existe_sql, [String.to_integer(id_album)]) do
-          {:ok, %{rows: [[true]]}} ->
-            :ok
+          case repo.query(existe_sql, [String.to_integer(id_album)]) do
+            {:ok, %{rows: [[true]]}} ->
+              :ok
 
-          _ ->
-            repo.rollback(:album_no_encontrado)
-        end
+            _ ->
+              repo.rollback(:album_no_encontrado)
+          end
 
-        # 2) Verificar con subquery IN que el formato sea válido
-        formato_sql = """
-          SELECT COUNT(*) FROM formato
-          WHERE id_formato IN (SELECT id_formato FROM formato WHERE id_formato = $1)
-        """
+          # 2) Verificar con subquery IN que el formato sea válido
+          formato_sql = """
+            SELECT COUNT(*) FROM formato
+            WHERE id_formato IN (SELECT id_formato FROM formato WHERE id_formato = $1)
+          """
 
-        case repo.query(formato_sql, [String.to_integer(id_formato)]) do
-          {:ok, %{rows: [[n]]}} when n > 0 -> :ok
-          _ -> repo.rollback(:formato_invalido)
-        end
+          case repo.query(formato_sql, [String.to_integer(id_formato)]) do
+            {:ok, %{rows: [[n]]}} when n > 0 -> :ok
+            _ -> repo.rollback(:formato_invalido)
+          end
 
-        # 3) Insertar el nuevo producto
-        insert_sql = """
-          INSERT INTO producto (id_producto, id_album, id_formato, precio, stock)
-          VALUES (
-            (SELECT COALESCE(MAX(id_producto), 0) + 1 FROM producto),
-            $1, $2, $3, $4
-          )
-        """
+          # 3) Insertar el nuevo producto
+          insert_sql = """
+            INSERT INTO producto (id_producto, id_album, id_formato, precio, stock)
+            VALUES (
+              (SELECT COALESCE(MAX(id_producto), 0) + 1 FROM producto),
+              $1, $2, $3, $4
+            )
+          """
 
-        case repo.query(insert_sql, [
-               String.to_integer(id_album),
-               String.to_integer(id_formato),
-               Decimal.new(precio),
-               String.to_integer(stock)
-             ]) do
-          {:ok, _} -> :ok
-          {:error, reason} -> repo.rollback(reason)
-        end
-      end)
+          case repo.query(insert_sql, [
+                 String.to_integer(id_album),
+                 String.to_integer(id_formato),
+                 Decimal.new(precio),
+                 String.to_integer(stock)
+               ]) do
+            {:ok, _} -> :ok
+            {:error, reason} -> repo.rollback(reason)
+          end
+        end)
 
-    case result do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> refrescar_datos()
-         |> assign(:modal, nil)
-         |> put_flash(:info, "Producto creado correctamente.")}
+      case result do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> refrescar_datos()
+           |> assign(:modal, nil)
+           |> put_flash(:info, "Producto creado correctamente.")}
 
-      {:error, :album_no_encontrado} ->
-        {:noreply,
-         put_flash(socket, :error, "El álbum indicado no existe. Operación revertida (ROLLBACK).")}
+        {:error, :album_no_encontrado} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "El álbum indicado no existe. Operación revertida (ROLLBACK)."
+           )}
 
-      {:error, :formato_invalido} ->
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           "El formato indicado no es válido. Operación revertida (ROLLBACK)."
-         )}
+        {:error, :formato_invalido} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "El formato indicado no es válido. Operación revertida (ROLLBACK)."
+           )}
 
-      {:error, _} ->
-        {:noreply,
-         put_flash(socket, :error, "Error al crear el producto. Operación revertida (ROLLBACK).")}
+        {:error, _} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "Error al crear el producto. Operación revertida (ROLLBACK)."
+           )}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
     end
   end
 
   # ── Actualizar producto ───────────────────────
   def handle_event("actualizar_producto", params, socket) do
-    %{"_id" => id, "precio" => precio, "stock" => stock} = params
+    if socket.assigns.puede_editar_producto do
+      %{"_id" => id, "precio" => precio, "stock" => stock} = params
 
-    result =
-      Repo.query(
-        "UPDATE producto SET precio = $1, stock = $2 WHERE id_producto = $3",
-        [Decimal.new(precio), String.to_integer(stock), String.to_integer(id)]
-      )
+      result =
+        Repo.query(
+          "UPDATE producto SET precio = $1, stock = $2 WHERE id_producto = $3",
+          [Decimal.new(precio), String.to_integer(stock), String.to_integer(id)]
+        )
 
-    case result do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> refrescar_datos()
-         |> assign(:modal, nil)
-         |> put_flash(:info, "Producto actualizado.")}
+      case result do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> refrescar_datos()
+           |> assign(:modal, nil)
+           |> put_flash(:info, "Producto actualizado.")}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Error al actualizar.")}
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Error al actualizar.")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
     end
   end
 
   # ── Eliminar producto ─────────────────────────
   def handle_event("eliminar_producto", %{"id" => id}, socket) do
-    Repo.query("DELETE FROM producto WHERE id_producto = $1", [String.to_integer(id)])
+    if socket.assigns.puede_eliminar_producto do
+      Repo.query("DELETE FROM producto WHERE id_producto = $1", [String.to_integer(id)])
 
-    {:noreply,
-     socket
-     |> refrescar_datos()
-     |> put_flash(:info, "Producto eliminado.")}
+      {:noreply,
+       socket
+       |> refrescar_datos()
+       |> put_flash(:info, "Producto eliminado.")}
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   # ══════════════════════════════════════════════
@@ -691,7 +726,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           >
             Top Artistas
           </button>
-          <%= if @vista_activa == :inventario do %>
+          <%= if @vista_activa == :inventario and @puede_crear_producto do %>
             <button phx-click="nuevo_producto" class="btn btn-primary btn-sm">+ Nuevo</button>
           <% end %>
         </div>
@@ -905,23 +940,27 @@ defmodule TiendaAlbumesWeb.InventarioLive do
                   </td>
                   <td>
                     <div class="flex gap-2">
-                      <button
-                        phx-click="editar_producto"
-                        phx-value-id={p.id}
-                        class="btn btn-xs"
-                        style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        phx-click="eliminar_producto"
-                        phx-value-id={p.id}
-                        data-confirm="¿Eliminar este producto?"
-                        class="btn btn-xs"
-                        style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
-                      >
-                        Eliminar
-                      </button>
+                      <%= if @puede_editar_producto do %>
+                        <button
+                          phx-click="editar_producto"
+                          phx-value-id={p.id}
+                          class="btn btn-xs"
+                          style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
+                        >
+                          Editar
+                        </button>
+                      <% end %>
+                      <%= if @puede_eliminar_producto do %>
+                        <button
+                          phx-click="eliminar_producto"
+                          phx-value-id={p.id}
+                          data-confirm="¿Eliminar este producto?"
+                          class="btn btn-xs"
+                          style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
+                        >
+                          Eliminar
+                        </button>
+                      <% end %>
                     </div>
                   </td>
                 </tr>
