@@ -2,9 +2,12 @@ defmodule TiendaAlbumesWeb.VentasLive do
   use TiendaAlbumesWeb, :live_view
 
   alias TiendaAlbumes.Repo
+  alias TiendaAlbumesWeb.RoleAccess
 
   @impl true
   def mount(_params, _session, socket) do
+    role = socket.assigns.current_scope.employee_role
+
     socket =
       socket
       |> assign(:sorts, %{ventas: %{field: :fecha, direction: :desc}})
@@ -20,6 +23,8 @@ defmodule TiendaAlbumesWeb.VentasLive do
       |> assign(:modal, nil)
       |> assign(:venta_detalle, nil)
       |> assign(:items_nueva_venta, [%{id_producto: "", cantidad: 1}])
+      |> assign(:current_employee_role, role)
+      |> assign(:puede_eliminar_venta, RoleAccess.can_delete_sales?(role))
       |> assign(:current_path, "/ventas")
       |> refrescar_ventas()
 
@@ -183,30 +188,34 @@ defmodule TiendaAlbumesWeb.VentasLive do
 
   # ── Eliminar venta ────────────────────────────
   def handle_event("eliminar_venta", %{"id" => id}, socket) do
-    id_int = String.to_integer(id)
-    # Restaurar stock antes de eliminar
-    Repo.transaction(fn ->
-      {:ok, %{rows: items}} =
-        Repo.query("SELECT id_producto, cantidad FROM detalle_compra WHERE id_compra = $1", [
-          id_int
-        ])
+    if socket.assigns.puede_eliminar_venta do
+      id_int = String.to_integer(id)
+      # Restaurar stock antes de eliminar
+      Repo.transaction(fn ->
+        {:ok, %{rows: items}} =
+          Repo.query("SELECT id_producto, cantidad FROM detalle_compra WHERE id_compra = $1", [
+            id_int
+          ])
 
-      Enum.each(items, fn [id_prod, cant] ->
-        Repo.query("UPDATE producto SET stock = stock + $1 WHERE id_producto = $2", [
-          cant,
-          id_prod
-        ])
+        Enum.each(items, fn [id_prod, cant] ->
+          Repo.query("UPDATE producto SET stock = stock + $1 WHERE id_producto = $2", [
+            cant,
+            id_prod
+          ])
+        end)
+
+        Repo.query("DELETE FROM detalle_compra WHERE id_compra = $1", [id_int])
+        Repo.query("DELETE FROM compra WHERE id_compra = $1", [id_int])
       end)
 
-      Repo.query("DELETE FROM detalle_compra WHERE id_compra = $1", [id_int])
-      Repo.query("DELETE FROM compra WHERE id_compra = $1", [id_int])
-    end)
-
-    {:noreply,
-     socket
-     |> assign(:productos, listar_productos_disponibles())
-     |> refrescar_ventas()
-     |> put_flash(:info, "Venta eliminada y stock restaurado.")}
+      {:noreply,
+       socket
+       |> assign(:productos, listar_productos_disponibles())
+       |> refrescar_ventas()
+       |> put_flash(:info, "Venta eliminada y stock restaurado.")}
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   # ══════════════════════════════════════════════
@@ -612,15 +621,17 @@ defmodule TiendaAlbumesWeb.VentasLive do
                     >
                       Ver detalle
                     </button>
-                    <button
-                      phx-click="eliminar_venta"
-                      phx-value-id={v.id}
-                      data-confirm="¿Eliminar esta venta? El stock será restaurado."
-                      class="btn btn-xs"
-                      style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
-                    >
-                      Eliminar
-                    </button>
+                    <%= if @puede_eliminar_venta do %>
+                      <button
+                        phx-click="eliminar_venta"
+                        phx-value-id={v.id}
+                        data-confirm="¿Eliminar esta venta? El stock será restaurado."
+                        class="btn btn-xs"
+                        style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
+                      >
+                        Eliminar
+                      </button>
+                    <% end %>
                   </div>
                 </td>
               </tr>
