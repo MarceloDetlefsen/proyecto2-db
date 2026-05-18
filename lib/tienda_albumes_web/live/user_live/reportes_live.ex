@@ -5,6 +5,8 @@ defmodule TiendaAlbumesWeb.ReportesLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    role = socket.assigns.current_scope.employee_role
+
     filtros = %{
       "formato" => "",
       "anio" => "",
@@ -15,6 +17,7 @@ defmodule TiendaAlbumesWeb.ReportesLive do
 
     {:ok,
      socket
+     |> assign(:current_employee_role, role)
      |> assign(:current_path, "/reportes")
      |> assign(:tab_activa, "productos_mas_vendidos")
      |> assign(:sorts, %{
