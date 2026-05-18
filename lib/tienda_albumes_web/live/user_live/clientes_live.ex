@@ -8,21 +8,28 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   def mount(_params, _session, socket) do
     role = socket.assigns.current_scope.employee_role
 
-    socket =
-      socket
-      |> assign(:sorts, %{clientes: %{field: :total_gastado, direction: :desc}})
-      |> assign(:filtros, %{"nombre" => "", "solo_compradores" => "false"})
-      |> assign(:modal, nil)
-      |> assign(:cliente_perfil, nil)
-      |> assign(:cliente_editando, nil)
-      |> assign(:current_employee_role, role)
-      |> assign(:puede_crear_cliente, RoleAccess.can_create_clients?(role))
-      |> assign(:puede_editar_cliente, RoleAccess.can_update_clients?(role))
-      |> assign(:puede_eliminar_cliente, RoleAccess.can_delete_clients?(role))
-      |> assign(:current_path, "/clientes")
-      |> refrescar_clientes()
+    if RoleAccess.can_access_clients?(role) do
+      socket =
+        socket
+        |> assign(:sorts, %{clientes: %{field: :total_gastado, direction: :desc}})
+        |> assign(:filtros, %{"nombre" => "", "solo_compradores" => "false"})
+        |> assign(:modal, nil)
+        |> assign(:cliente_perfil, nil)
+        |> assign(:cliente_editando, nil)
+        |> assign(:current_employee_role, role)
+        |> assign(:puede_crear_cliente, RoleAccess.can_create_clients?(role))
+        |> assign(:puede_editar_cliente, RoleAccess.can_update_clients?(role))
+        |> assign(:puede_eliminar_cliente, RoleAccess.can_delete_clients?(role))
+        |> assign(:current_path, "/clientes")
+        |> refrescar_clientes()
 
-    {:ok, socket}
+      {:ok, socket}
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "Acceso denegado.")
+       |> redirect(to: ~p"/")}
+    end
   end
 
   # ──────────────────────────────────────────────

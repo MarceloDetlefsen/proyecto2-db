@@ -8,6 +8,17 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   def mount(_params, _session, socket) do
     role = socket.assigns.current_scope.employee_role
 
+    if RoleAccess.can_access_inventory?(role) do
+      mount_inventory(socket, role)
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "Acceso denegado.")
+       |> redirect(to: ~p"/")}
+    end
+  end
+
+  defp mount_inventory(socket, role) do
     # Crea el VIEW automáticamente si no existe todavía
     crear_view_si_no_existe()
 
