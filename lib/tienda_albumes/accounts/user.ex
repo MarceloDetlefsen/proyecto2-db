@@ -38,7 +38,7 @@ defmodule TiendaAlbumes.Accounts.User do
     user
     |> cast(attrs, [:password])
     |> validate_confirmation(:password, message: "does not match password")
-    |> validate_password(opts)
+    |> validate_password(Keyword.put(opts, :required, true))
   end
 
   defp validate_email(changeset, opts) do
@@ -69,8 +69,14 @@ defmodule TiendaAlbumes.Accounts.User do
   end
 
   defp validate_password(changeset, opts) do
+    changeset =
+      if Keyword.get(opts, :required, false) do
+        validate_required(changeset, [:password])
+      else
+        changeset
+      end
+
     changeset
-    |> validate_required([:password])
     |> validate_length(:password, min: 12, max: 72)
     |> maybe_hash_password(opts)
   end

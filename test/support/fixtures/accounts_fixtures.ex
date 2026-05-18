@@ -24,6 +24,8 @@ defmodule TiendaAlbumes.AccountsFixtures do
       |> valid_user_attributes()
       |> Accounts.register_user()
 
+    attach_employee!(user)
+
     user
   end
 
@@ -84,6 +86,16 @@ defmodule TiendaAlbumes.AccountsFixtures do
     TiendaAlbumes.Repo.update_all(
       from(ut in Accounts.UserToken, where: ut.token == ^token),
       set: [inserted_at: dt, authenticated_at: dt]
+    )
+  end
+
+  defp attach_employee!(user) do
+    %{rows: [[next_id]]} =
+      TiendaAlbumes.Repo.query!("SELECT COALESCE(MAX(id_empleado), 0) + 1 FROM empleado")
+
+    TiendaAlbumes.Repo.query!(
+      "INSERT INTO empleado (id_empleado, nombre, puesto, telefono, user_id) VALUES ($1, $2, $3, $4, $5)",
+      [next_id, "Empleado #{next_id}", "Vendedor", "5559-#{next_id}", user.id]
     )
   end
 end
