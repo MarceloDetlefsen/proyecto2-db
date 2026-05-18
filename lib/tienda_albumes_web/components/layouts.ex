@@ -1,6 +1,8 @@
 defmodule TiendaAlbumesWeb.Layouts do
   use TiendaAlbumesWeb, :html
 
+  alias TiendaAlbumesWeb.RoleAccess
+
   embed_templates "layouts/*"
 
   attr :flash, :map, required: true
@@ -31,6 +33,10 @@ defmodule TiendaAlbumesWeb.Layouts do
       |> assign(:empleado_id, empleado_id)
       |> assign(:es_admin, es_admin)
       |> assign(:current_employee_role, employee_role)
+      |> assign(:can_access_inventory, RoleAccess.can_access_inventory?(employee_role))
+      |> assign(:can_access_clients, RoleAccess.can_access_clients?(employee_role))
+      |> assign(:can_access_reports, RoleAccess.can_access_reports?(employee_role))
+      |> assign(:can_access_sales, RoleAccess.can_access_sales?(employee_role))
       # Estado del mini-modal de perfil rápido (solo para no-admin)
       |> assign_new(:perfil_modal_open, fn -> false end)
       |> assign_new(:perfil_tab, fn -> "password" end)
@@ -233,10 +239,18 @@ defmodule TiendaAlbumesWeb.Layouts do
         style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase;"
       >
         <%= if @current_scope do %>
-          <.nav_link href="/inventario" current_path={@current_path}>Inventario</.nav_link>
-          <.nav_link href="/ventas" current_path={@current_path}>Ventas</.nav_link>
-          <.nav_link href="/clientes" current_path={@current_path}>Clientes</.nav_link>
-          <.nav_link href="/reportes" current_path={@current_path}>Reportes</.nav_link>
+          <%= if @can_access_inventory do %>
+            <.nav_link href="/inventario" current_path={@current_path}>Inventario</.nav_link>
+          <% end %>
+          <%= if @can_access_sales do %>
+            <.nav_link href="/ventas" current_path={@current_path}>Ventas</.nav_link>
+          <% end %>
+          <%= if @can_access_clients do %>
+            <.nav_link href="/clientes" current_path={@current_path}>Clientes</.nav_link>
+          <% end %>
+          <%= if @can_access_reports do %>
+            <.nav_link href="/reportes" current_path={@current_path}>Reportes</.nav_link>
+          <% end %>
 
           <div class="w-px h-4" style="background-color: var(--c-border);"></div>
         <% end %>
