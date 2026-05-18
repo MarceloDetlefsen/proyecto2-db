@@ -66,6 +66,10 @@ defmodule TiendaAlbumesWeb.Router do
 
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
+  end
+
+  scope "/", TiendaAlbumesWeb do
+    pipe_through [:browser, :require_authenticated_user, :require_reports_access]
 
     get "/reportes/csv/productos_mas_vendidos", ReportesController, :productos_mas_vendidos
     get "/reportes/csv/ingresos_periodo", ReportesController, :ingresos_periodo

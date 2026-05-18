@@ -251,6 +251,19 @@ defmodule TiendaAlbumesWeb.UserAuth do
     end
   end
 
+  def require_reports_access(conn, _opts) do
+    role = current_employee_role(conn)
+
+    if RoleAccess.can_access_reports?(role) do
+      conn
+    else
+      conn
+      |> put_flash(:error, "Acceso denegado.")
+      |> redirect(to: ~p"/")
+      |> halt()
+    end
+  end
+
   def authorize_role(socket, route, opts \\ []) do
     role = current_employee_role(socket)
 
@@ -283,6 +296,14 @@ defmodule TiendaAlbumesWeb.UserAuth do
 
   def current_employee_role(%{assigns: %{current_scope: %{employee: employee}}}),
     do: Scope.employee_role(employee)
+
+  def current_employee_role(%Plug.Conn{} = conn) do
+    case conn.assigns[:current_scope] do
+      %{employee_role: role} -> role
+      %{employee: employee} -> Scope.employee_role(employee)
+      _ -> nil
+    end
+  end
 
   def current_employee_role(_), do: nil
 
