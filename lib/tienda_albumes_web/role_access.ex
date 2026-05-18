@@ -12,10 +12,15 @@ defmodule TiendaAlbumesWeb.RoleAccess do
   @route_roles %{
     home: @roles,
     perfil: @roles,
-    inventario: @roles,
+    inventario: ["role_gerente", "role_vendedor_senior", "role_vendedor"],
     ventas: @roles,
-    clientes: @roles,
-    reportes: @roles,
+    clientes: [
+      "role_gerente",
+      "role_vendedor_senior",
+      "role_vendedor",
+      "role_vendedor_junior"
+    ],
+    reportes: ["role_gerente", "role_vendedor_senior", "role_vendedor"],
     empleados: ["role_gerente"]
   }
 
@@ -49,4 +54,8 @@ defmodule TiendaAlbumesWeb.RoleAccess do
   def can_delete_sales?(role), do: role in @sale_delete_roles
 
   def can_access_employees?(role), do: role == "role_gerente"
+  def can_access_inventory?(role), do: role in Map.fetch!(@route_roles, :inventario)
+  def can_access_clients?(role), do: role in Map.fetch!(@route_roles, :clientes)
+  def can_access_reports?(role), do: role in Map.fetch!(@route_roles, :reportes)
+  def can_access_sales?(role), do: role in Map.fetch!(@route_roles, :ventas)
 end
