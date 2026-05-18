@@ -3,11 +3,18 @@ defmodule TiendaAlbumes.Repo.Migrations.CreateDbRoles do
 
   def up do
     # ── 1. Crear los 5 roles ──────────────────────────────────────────────────
-    execute "CREATE ROLE role_gerente"
-    execute "CREATE ROLE role_vendedor_senior"
-    execute "CREATE ROLE role_vendedor"
-    execute "CREATE ROLE role_vendedor_junior"
-    execute "CREATE ROLE role_cajero"
+    for role <-
+          ~w(role_gerente role_vendedor_senior role_vendedor role_vendedor_junior role_cajero) do
+      execute """
+      DO $$
+      BEGIN
+        CREATE ROLE #{role};
+      EXCEPTION
+        WHEN duplicate_object THEN NULL;
+      END
+      $$;
+      """
+    end
 
     # ── 2. Permisos sobre producto ────────────────────────────────────────────
     execute "GRANT SELECT, INSERT, UPDATE, DELETE ON producto TO role_gerente"
@@ -60,7 +67,19 @@ defmodule TiendaAlbumes.Repo.Migrations.CreateDbRoles do
       execute "GRANT SELECT ON #{tabla} TO role_vendedor"
     end
 
-    # ── 9. Permisos sobre users / users_tokens ────────────────────────────────
+    # ── 9. Asegurar el usuario de calificación ──────────────────────────────
+    execute """
+    DO $$
+    BEGIN
+      CREATE ROLE proy3 LOGIN PASSWORD 'secret';
+    EXCEPTION
+      WHEN duplicate_object THEN
+        ALTER ROLE proy3 WITH LOGIN PASSWORD 'secret';
+    END
+    $$;
+    """
+
+    # ── 10. Permisos sobre users / users_tokens ──────────────────────────────
     execute "GRANT SELECT, INSERT, UPDATE, DELETE ON users TO role_gerente"
     execute "GRANT SELECT, INSERT, UPDATE, DELETE ON users_tokens TO role_gerente"
     execute "GRANT SELECT ON users TO role_vendedor_senior"
@@ -68,28 +87,21 @@ defmodule TiendaAlbumes.Repo.Migrations.CreateDbRoles do
     execute "GRANT SELECT ON users TO role_vendedor_junior"
     execute "GRANT SELECT ON users TO role_cajero"
 
-    # ── 10. Permisos sobre el VIEW ────────────────────────────────────────────
-    execute "GRANT SELECT ON vista_productos_completa TO role_gerente"
-    execute "GRANT SELECT ON vista_productos_completa TO role_vendedor_senior"
-    execute "GRANT SELECT ON vista_productos_completa TO role_vendedor"
-    execute "GRANT SELECT ON vista_productos_completa TO role_vendedor_junior"
-    execute "GRANT SELECT ON vista_productos_completa TO role_cajero"
-
-    # ── 11. Asignar roles al usuario proy2 (credencial fija de calificación) ──
-    execute "GRANT role_gerente TO proy2"
-    execute "GRANT role_vendedor_senior TO proy2"
-    execute "GRANT role_vendedor TO proy2"
-    execute "GRANT role_vendedor_junior TO proy2"
-    execute "GRANT role_cajero TO proy2"
+    # ── 11. Asignar roles al usuario proy3 (credencial fija de calificación) ──
+    execute "GRANT role_gerente TO proy3"
+    execute "GRANT role_vendedor_senior TO proy3"
+    execute "GRANT role_vendedor TO proy3"
+    execute "GRANT role_vendedor_junior TO proy3"
+    execute "GRANT role_cajero TO proy3"
   end
 
   def down do
-    # Revocar roles del usuario proy2
-    execute "REVOKE role_gerente FROM proy2"
-    execute "REVOKE role_vendedor_senior FROM proy2"
-    execute "REVOKE role_vendedor FROM proy2"
-    execute "REVOKE role_vendedor_junior FROM proy2"
-    execute "REVOKE role_cajero FROM proy2"
+    # Revocar roles del usuario proy3
+    execute "REVOKE role_gerente FROM proy3"
+    execute "REVOKE role_vendedor_senior FROM proy3"
+    execute "REVOKE role_vendedor FROM proy3"
+    execute "REVOKE role_vendedor_junior FROM proy3"
+    execute "REVOKE role_cajero FROM proy3"
 
     # Eliminar los roles (CASCADE revoca todos los permisos asignados)
     execute "DROP ROLE IF EXISTS role_gerente"

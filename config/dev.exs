@@ -1,7 +1,7 @@
 import Config
 
 config :tienda_albumes, TiendaAlbumes.Repo,
-  username: "proy2",
+  username: "proy3",
   password: "secret",
   hostname: "localhost",
   database: "tienda_albumes_dev",

@@ -23,7 +23,7 @@ Este comando instala dependencias, crea la base de datos, ejecuta migraciones, c
 
 En desarrollo, el proyecto usa estos datos en `config/dev.exs`:
 
-- `username`: `proy2`
+- `username`: `proy3`
 - `password`: `secret`
 - `hostname`: `localhost`
 - `database`: `tienda_albumes_dev`
