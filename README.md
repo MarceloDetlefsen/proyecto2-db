@@ -89,6 +89,18 @@ docker compose up --build
 | Password | `secret`               |
 | Base de datos | `tienda_albumes_prod` |
 
+## Credenciales de prueba de la app
+
+| Rol | Email | Password | Empleado |
+|---|---|---|---|
+| Gerente | `gerente@heritage.local` | `Gerente12345!` | Carlos Monterroso |
+| Vendedor Senior | `vendedor_senior@heritage.local` | `Senior12345!` | Luisa Cifuentes |
+| Vendedor | `vendedor@heritage.local` | `Vendedor12345!` | Marco Ajú |
+| Vendedor Junior | `vendedor_junior@heritage.local` | `Junior12345!` | Rodrigo Chaj |
+| Cajero | `cajero@heritage.local` | `Cajero12345!` | Fernanda Coy |
+
+Todos los usuarios usan la base de datos `proy3 / secret` al correr en Docker.
+
 ---
 
 ## Stack técnico
