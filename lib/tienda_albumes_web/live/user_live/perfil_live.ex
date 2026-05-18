@@ -7,11 +7,13 @@ defmodule TiendaAlbumesWeb.PerfilLive do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
+    role = socket.assigns.current_scope.employee_role
 
     empleado = obtener_empleado_por_user(user.id)
 
     {:ok,
      socket
+     |> assign(:current_employee_role, role)
      |> assign(:current_path, "/perfil")
      |> assign(:empleado, empleado)
      |> assign(:user, user)
