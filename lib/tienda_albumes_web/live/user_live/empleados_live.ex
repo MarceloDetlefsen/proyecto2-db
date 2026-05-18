@@ -3,37 +3,34 @@ defmodule TiendaAlbumesWeb.EmpleadosLive do
 
   alias TiendaAlbumes.Repo
   alias TiendaAlbumes.Accounts
-
-  @admin_puesto "Gerente"
+  alias TiendaAlbumesWeb.RoleAccess
+  alias TiendaAlbumesWeb.UserAuth
 
   @impl true
   def mount(_params, _session, socket) do
-    user_id = socket.assigns.current_scope.user.id
+    case UserAuth.authorize_role(socket, :empleados) do
+      {:ok, socket} ->
+        empleado_actual = socket.assigns.current_scope.employee
 
-    # Obtener el empleado del usuario logueado para verificar si es Gerente
-    empleado_actual = obtener_empleado_por_user(user_id)
-    es_admin = empleado_actual && empleado_actual.puesto == @admin_puesto
+        socket =
+          socket
+          |> assign(:current_path, "/empleados")
+          |> assign(
+            :es_admin,
+            RoleAccess.can_access_employees?(socket.assigns.current_scope.employee_role)
+          )
+          |> assign(:empleado_actual, empleado_actual)
+          |> assign(:modal, nil)
+          |> assign(:empleado_sel, nil)
+          |> assign(:error, nil)
+          |> assign(:sorts, %{empleados: %{field: :nombre, direction: :asc}})
+          |> refrescar_empleados()
 
-    socket =
-      socket
-      |> assign(:current_path, "/empleados")
-      |> assign(:es_admin, es_admin)
-      |> assign(:empleado_actual, empleado_actual)
-      |> assign(:modal, nil)
-      |> assign(:empleado_sel, nil)
-      |> assign(:error, nil)
-      |> assign(:sorts, %{empleados: %{field: :nombre, direction: :asc}})
+        {:ok, socket}
 
-    socket =
-      if es_admin do
-        refrescar_empleados(socket)
-      else
-        socket
-        |> assign(:empleados, [])
-        |> push_navigate(to: "/")
-      end
-
-    {:ok, socket}
+      {:halt, socket} ->
+        {:ok, socket}
+    end
   end
 
   # ── Ordenamiento ──────────────────────────────────────────────
@@ -209,19 +206,6 @@ defmodule TiendaAlbumesWeb.EmpleadosLive do
   end
 
   # ── Queries ───────────────────────────────────────────────────
-  defp obtener_empleado_por_user(user_id) do
-    case Repo.query(
-           "SELECT id_empleado, nombre, puesto, telefono FROM empleado WHERE user_id = $1 LIMIT 1",
-           [user_id]
-         ) do
-      {:ok, %{rows: [[id, nombre, puesto, telefono]]}} ->
-        %{id: id, nombre: nombre, puesto: puesto, telefono: telefono}
-
-      _ ->
-        nil
-    end
-  end
-
   defp refrescar_empleados(socket) do
     sql = """
       SELECT
