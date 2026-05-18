@@ -1,3 +1,4 @@
+alias TiendaAlbumes.Accounts
 alias TiendaAlbumes.Repo
 
 # ─────────────────────────────────────────────────────────────
@@ -515,18 +516,76 @@ INSERT INTO cliente VALUES
 # EMPLEADOS — 10 (8 originales + 2 nuevos)
 # ─────────────────────────────────────────────────────────────
 Repo.query!("""
-INSERT INTO empleado VALUES
-(1,'Carlos Monterroso','Gerente','5552-0001'),
-(2,'Luisa Cifuentes','Vendedor Senior','5552-0002'),
-(3,'Marco Ajú','Vendedor','5552-0003'),
-(4,'Diana Batz','Vendedor','5552-0004'),
-(5,'Rodrigo Chaj','Vendedor Junior','5552-0005'),
-(6,'Fernanda Coy','Cajero','5552-0006'),
-(7,'Sebastián Tum','Cajero','5552-0007'),
-(8,'Valeria Xoc','Cajero','5552-0008'),
-(9,'Jorge Quiñones','Vendedor Senior','5552-0009'),
-(10,'Brenda Toc','Vendedor','5552-0010')
+INSERT INTO empleado (id_empleado, nombre, puesto, telefono, db_role) VALUES
+(1,'Carlos Monterroso','Gerente','5552-0001','role_gerente'),
+(2,'Luisa Cifuentes','Vendedor Senior','5552-0002','role_vendedor_senior'),
+(3,'Marco Ajú','Vendedor','5552-0003','role_vendedor'),
+(4,'Diana Batz','Vendedor','5552-0004',NULL),
+(5,'Rodrigo Chaj','Vendedor Junior','5552-0005','role_vendedor_junior'),
+(6,'Fernanda Coy','Cajero','5552-0006','role_cajero'),
+(7,'Sebastián Tum','Cajero','5552-0007',NULL),
+(8,'Valeria Xoc','Cajero','5552-0008',NULL),
+(9,'Jorge Quiñones','Vendedor Senior','5552-0009',NULL),
+(10,'Brenda Toc','Vendedor','5552-0010',NULL)
 """)
+
+role_users = [
+  %{
+    email: "gerente@heritage.local",
+    password: "Gerente12345!",
+    id_empleado: 1,
+    db_role: "role_gerente"
+  },
+  %{
+    email: "vendedor_senior@heritage.local",
+    password: "Senior12345!",
+    id_empleado: 2,
+    db_role: "role_vendedor_senior"
+  },
+  %{
+    email: "vendedor@heritage.local",
+    password: "Vendedor12345!",
+    id_empleado: 3,
+    db_role: "role_vendedor"
+  },
+  %{
+    email: "vendedor_junior@heritage.local",
+    password: "Junior12345!",
+    id_empleado: 5,
+    db_role: "role_vendedor_junior"
+  },
+  %{
+    email: "cajero@heritage.local",
+    password: "Cajero12345!",
+    id_empleado: 6,
+    db_role: "role_cajero"
+  }
+]
+
+Enum.each(role_users, fn %{
+                           email: email,
+                           password: password,
+                           id_empleado: id_empleado,
+                           db_role: db_role
+                         } ->
+  user =
+    case Accounts.get_user_by_email(email) do
+      nil ->
+        {:ok, user} = Accounts.register_user(%{email: email, password: password})
+        user
+
+      user ->
+        {:ok, {user, _expired_tokens}} =
+          Accounts.update_user_password(user, %{password: password})
+
+        user
+    end
+
+  Repo.query!(
+    "UPDATE empleado SET user_id = $1, db_role = $2 WHERE id_empleado = $3",
+    [user.id, db_role, id_empleado]
+  )
+end)
 
 # ─────────────────────────────────────────────────────────────
 # COMPRAS — 100 compras distribuidas 2024–2026
