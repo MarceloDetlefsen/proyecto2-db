@@ -1,8 +1,6 @@
 defmodule TiendaAlbumesWeb.Layouts do
   use TiendaAlbumesWeb, :html
 
-  alias TiendaAlbumes.Repo
-
   embed_templates "layouts/*"
 
   attr :flash, :map, required: true
@@ -14,22 +12,16 @@ defmodule TiendaAlbumesWeb.Layouts do
   slot :inner_block, required: true
 
   def app(assigns) do
-    {nombre_empleado, puesto_empleado, empleado_id, es_admin} =
+    {nombre_empleado, puesto_empleado, empleado_id, es_admin, employee_role} =
       case assigns[:current_scope] do
-        %{user: %{id: user_id}} when not is_nil(user_id) ->
-          case Repo.query(
-                 "SELECT nombre, puesto, id_empleado FROM empleado WHERE user_id = $1 LIMIT 1",
-                 [user_id]
-               ) do
-            {:ok, %{rows: [[nombre, puesto, emp_id]]}} ->
-              {nombre, puesto, emp_id, puesto == "Gerente"}
+        %{employee: %{nombre: nombre, puesto: puesto, id: emp_id}, employee_role: role} ->
+          {nombre, puesto, emp_id, role == "role_gerente", role}
 
-            _ ->
-              {nil, nil, nil, false}
-          end
+        %{user: %{email: email}} ->
+          {email, nil, nil, false, nil}
 
         _ ->
-          {nil, nil, nil, false}
+          {nil, nil, nil, false, nil}
       end
 
     assigns =
@@ -38,6 +30,7 @@ defmodule TiendaAlbumesWeb.Layouts do
       |> assign(:puesto_empleado, puesto_empleado)
       |> assign(:empleado_id, empleado_id)
       |> assign(:es_admin, es_admin)
+      |> assign(:current_employee_role, employee_role)
       # Estado del mini-modal de perfil rápido (solo para no-admin)
       |> assign_new(:perfil_modal_open, fn -> false end)
       |> assign_new(:perfil_tab, fn -> "password" end)
