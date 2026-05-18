@@ -160,3 +160,78 @@ GRANT role_cajero           TO proy3;
 ```
 
 Esto se ejecuta automáticamente en la migración `20260518055555_create_db_roles.exs`.
+
+---
+
+## Acceso en la web
+
+Además de los permisos SQL, la aplicación web aplica una matriz de acceso por rol al montar cada LiveView y al renderizar el menú principal.
+
+### 1. `role_gerente`
+
+- Ve todas las pantallas: `Home`, `Inventario`, `Ventas`, `Clientes`, `Reportes`, `Perfil` y `Equipo`.
+- Puede crear, editar y eliminar productos.
+- Puede crear, editar y eliminar clientes.
+- Puede eliminar ventas.
+- Puede administrar empleados.
+- Puede abrir los reportes y descargar CSV.
+
+### 2. `role_vendedor_senior`
+
+- Ve `Home`, `Inventario`, `Ventas`, `Clientes`, `Reportes` y `Perfil`.
+- No ve `Equipo`.
+- Puede crear, editar y eliminar productos.
+- Puede crear, editar y eliminar clientes.
+- Puede eliminar ventas.
+- Puede usar reportes.
+
+### 3. `role_vendedor`
+
+- Ve `Home`, `Inventario`, `Ventas`, `Clientes`, `Reportes` y `Perfil`.
+- No ve `Equipo`.
+- Puede editar productos, pero no crearlos ni eliminarlos.
+- Puede crear, editar y eliminar clientes.
+- Puede eliminar ventas.
+- Puede usar reportes.
+
+### 4. `role_vendedor_junior`
+
+- Ve `Home`, `Ventas`, `Clientes` y `Perfil`.
+- No ve `Inventario`, `Reportes` ni `Equipo`.
+- Puede crear y editar clientes, pero no eliminarlos.
+- Puede registrar ventas.
+- No puede eliminar ventas.
+
+### 5. `role_cajero`
+
+- Ve `Home`, `Ventas` y `Perfil`.
+- No ve `Inventario`, `Clientes`, `Reportes` ni `Equipo`.
+- Puede registrar ventas.
+- No puede eliminar ventas.
+- No puede crear, editar ni eliminar productos o clientes.
+
+### Matriz resumida de la web
+
+| Pantalla | Gerente | Vend. Senior | Vendedor | Vend. Junior | Cajero |
+|---|:---:|:---:|:---:|:---:|:---:|
+| `Home` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `Inventario` | ✓ | ✓ | ✓ | — | — |
+| `Ventas` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `Clientes` | ✓ | ✓ | ✓ | ✓ | — |
+| `Reportes` | ✓ | ✓ | ✓ | — | — |
+| `Perfil` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `Equipo` | ✓ | — | — | — | — |
+
+### Acciones web
+
+| Acción | Gerente | Vend. Senior | Vendedor | Vend. Junior | Cajero |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Crear producto | ✓ | ✓ | — | — | — |
+| Editar producto | ✓ | ✓ | ✓ | — | — |
+| Eliminar producto | ✓ | ✓ | — | — | — |
+| Crear cliente | ✓ | ✓ | ✓ | ✓ | — |
+| Editar cliente | ✓ | ✓ | ✓ | ✓ | — |
+| Eliminar cliente | ✓ | ✓ | ✓ | — | — |
+| Eliminar venta | ✓ | ✓ | ✓ | — | — |
+| Administrar empleados | ✓ | — | — | — | — |
+| Exportar reportes CSV | ✓ | ✓ | ✓ | — | — |
