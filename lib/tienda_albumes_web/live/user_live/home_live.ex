@@ -5,12 +5,14 @@ defmodule TiendaAlbumesWeb.HomeLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    role = socket.assigns[:current_scope] && socket.assigns.current_scope.employee_role
     stats = cargar_stats()
     destacados = cargar_destacados()
     recientes = cargar_ventas_recientes()
 
     socket =
       socket
+      |> assign(:current_employee_role, role)
       |> assign(:stats, stats)
       |> assign(:destacados, destacados)
       |> assign(:recientes, recientes)
