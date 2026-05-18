@@ -24,6 +24,24 @@ defmodule TiendaAlbumesWeb.Live.RoleAccessTest do
         assert forbidden_redirect?(redirect)
       end
     end
+
+    test "cajero is denied access to inventory, clients and reports", %{conn: conn} do
+      user = fixed_role_user_fixture("role_cajero")
+
+      for path <- [~p"/inventario", ~p"/clientes", ~p"/reportes"] do
+        assert {:error, redirect} = conn |> log_in_user(user) |> live(path)
+        assert forbidden_redirect?(redirect)
+      end
+    end
+
+    test "vendedor junior is denied access to inventory and reports", %{conn: conn} do
+      user = fixed_role_user_fixture("role_vendedor_junior")
+
+      for path <- [~p"/inventario", ~p"/reportes"] do
+        assert {:error, redirect} = conn |> log_in_user(user) |> live(path)
+        assert forbidden_redirect?(redirect)
+      end
+    end
   end
 
   describe "ui visibility" do
@@ -38,8 +56,11 @@ defmodule TiendaAlbumesWeb.Live.RoleAccessTest do
 
     test "cajero cannot create inventory products", %{conn: conn} do
       user = fixed_role_user_fixture("role_cajero")
-      {:ok, lv, _html} = conn |> log_in_user(user) |> live(~p"/inventario")
+      {:ok, lv, _html} = conn |> log_in_user(user) |> live(~p"/")
 
+      refute has_element?(lv, "nav a[href=\"/inventario\"]")
+      refute has_element?(lv, "nav a[href=\"/clientes\"]")
+      refute has_element?(lv, "nav a[href=\"/reportes\"]")
       refute has_element?(lv, "button[phx-click=\"nuevo_producto\"]")
       refute has_element?(lv, "button[phx-click=\"editar_producto\"]")
       refute has_element?(lv, "button[phx-click=\"eliminar_producto\"]")
@@ -47,7 +68,7 @@ defmodule TiendaAlbumesWeb.Live.RoleAccessTest do
 
     test "cajero cannot create clients", %{conn: conn} do
       user = fixed_role_user_fixture("role_cajero")
-      {:ok, lv, _html} = conn |> log_in_user(user) |> live(~p"/clientes")
+      {:ok, lv, _html} = conn |> log_in_user(user) |> live(~p"/")
 
       refute has_element?(lv, "button[phx-click=\"nuevo_cliente\"]")
       refute has_element?(lv, "button[phx-click=\"editar_cliente\"]")
