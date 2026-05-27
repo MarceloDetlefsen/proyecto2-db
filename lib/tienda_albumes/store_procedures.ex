@@ -8,7 +8,7 @@ defmodule TiendaAlbumes.StoreProcedures do
   def create_product(id_album, id_formato, precio, stock) do
     with {:ok, [estado, mensaje, id_producto]} <-
            call_one_row(
-             "CALL sp_producto_crear($1, $2, $3, $4)",
+             "CALL sp_producto_crear($1::INT, $2::INT, $3::NUMERIC, $4::INT, NULL, NULL, NULL)",
              [id_album, id_formato, precio, stock]
            ) do
       build_result(estado, mensaje, :id_producto, id_producto)
@@ -18,7 +18,7 @@ defmodule TiendaAlbumes.StoreProcedures do
   def update_product(id_producto, precio, stock) do
     with {:ok, [estado, mensaje]} <-
            call_one_row(
-             "CALL sp_producto_actualizar($1, $2, $3)",
+             "CALL sp_producto_actualizar($1::INT, $2::NUMERIC, $3::INT, NULL, NULL)",
              [id_producto, precio, stock]
            ) do
       build_result(estado, mensaje)
@@ -27,7 +27,7 @@ defmodule TiendaAlbumes.StoreProcedures do
 
   def delete_product(id_producto) do
     with {:ok, [estado, mensaje]} <-
-           call_one_row("CALL sp_producto_eliminar($1)", [id_producto]) do
+           call_one_row("CALL sp_producto_eliminar($1::INT, NULL, NULL)", [id_producto]) do
       build_result(estado, mensaje)
     end
   end
@@ -42,7 +42,7 @@ defmodule TiendaAlbumes.StoreProcedures do
 
     with {:ok, [estado, mensaje, id_compra]} <-
            call_one_row(
-             "CALL sp_venta_registrar($1, $2, $3, $4::jsonb)",
+             "CALL sp_venta_registrar($1::INT, $2::INT, $3::DATE, $4::jsonb, NULL, NULL, NULL)",
              [id_cliente, id_empleado, fecha, payload]
            ) do
       build_result(estado, mensaje, :id_compra, id_compra)
@@ -51,7 +51,7 @@ defmodule TiendaAlbumes.StoreProcedures do
 
   def delete_sale(id_compra) do
     with {:ok, [estado, mensaje]} <-
-           call_one_row("CALL sp_venta_eliminar($1)", [id_compra]) do
+           call_one_row("CALL sp_venta_eliminar($1::INT, NULL, NULL)", [id_compra]) do
       build_result(estado, mensaje)
     end
   end

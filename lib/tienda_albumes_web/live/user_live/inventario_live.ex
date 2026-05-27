@@ -24,11 +24,13 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     crear_view_si_no_existe()
 
     artistas = listar_artistas()
+    albumes = listar_albumes()
     generos = listar_generos()
 
     socket =
       socket
       |> assign(:artistas, artistas)
+      |> assign(:albumes, albumes)
       |> assign(:generos, generos)
       |> assign(:sorts, %{
         productos: %{field: :titulo, direction: :asc},
@@ -483,6 +485,26 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   end
 
   # ── 4. Catálogo completo (artistas + géneros) ─────────────────────────────────
+  defp listar_albumes do
+    case Repo.query(
+           """
+           SELECT al.titulo, al.id_album, ar.nombre
+           FROM album al
+           JOIN artista ar ON al.id_artista = ar.id_artista
+           ORDER BY al.titulo
+           """,
+           []
+         ) do
+      {:ok, result} ->
+        Enum.map(result.rows, fn [titulo, id, artista] ->
+          {"#{titulo} · #{artista}", id}
+        end)
+
+      _ ->
+        []
+    end
+  end
+
   defp listar_artistas do
     case Repo.query("SELECT id_artista, nombre FROM artista ORDER BY nombre", []) do
       {:ok, result} -> Enum.map(result.rows, fn [id, nombre] -> {nombre, id} end)
@@ -1161,15 +1183,19 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             <form phx-submit="guardar_producto">
               <div class="mb-3">
                 <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
-                  Álbum (ID)
+                  Álbum
                 </label>
-                <input
-                  type="number"
+                <select
                   name="id_album"
                   required
-                  class="input input-sm w-full"
+                  class="select select-sm w-full"
                   style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
-                />
+                >
+                  <option value="">Seleccionar álbum...</option>
+                  <%= for {titulo, id} <- @albumes do %>
+                    <option value={id}>{titulo}</option>
+                  <% end %>
+                </select>
               </div>
               <div class="mb-3">
                 <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
