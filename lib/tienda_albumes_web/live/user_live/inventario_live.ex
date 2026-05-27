@@ -2,6 +2,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   use TiendaAlbumesWeb, :live_view
 
   alias TiendaAlbumes.Repo
+  alias TiendaAlbumes.StoreProcedures
   alias TiendaAlbumesWeb.RoleAccess
 
   @impl true
@@ -120,8 +121,8 @@ defmodule TiendaAlbumesWeb.InventarioLive do
     {:noreply, socket |> assign(:modal, nil) |> assign(:producto_editando, nil)}
   end
 
-  # ── Crear producto con transacción explícita + ROLLBACK ──────────────────────
-  # Requisito: al menos 1 transacción explícita con manejo de error y ROLLBACK
+  # ── Crear producto vía stored procedure ──────────────────────────────────────
+  # La validación y el manejo de errores viven en Postgres.
   def handle_event("guardar_producto", params, socket) do
     if socket.assigns.puede_crear_producto do
       %{
@@ -131,87 +132,24 @@ defmodule TiendaAlbumesWeb.InventarioLive do
         "stock" => stock
       } = params
 
-      # Verificamos que el álbum exista usando subquery con EXISTS (requisito subquery)
-      # y ejecutamos la inserción dentro de una transacción explícita con ROLLBACK.
       result =
-        Repo.transaction(fn repo ->
-          # 1) Validar con subquery EXISTS que el álbum exista
-          existe_sql = """
-            SELECT EXISTS (
-              SELECT 1 FROM album WHERE id_album = $1
-            )
-          """
-
-          case repo.query(existe_sql, [String.to_integer(id_album)]) do
-            {:ok, %{rows: [[true]]}} ->
-              :ok
-
-            _ ->
-              repo.rollback(:album_no_encontrado)
-          end
-
-          # 2) Verificar con subquery IN que el formato sea válido
-          formato_sql = """
-            SELECT COUNT(*) FROM formato
-            WHERE id_formato IN (SELECT id_formato FROM formato WHERE id_formato = $1)
-          """
-
-          case repo.query(formato_sql, [String.to_integer(id_formato)]) do
-            {:ok, %{rows: [[n]]}} when n > 0 -> :ok
-            _ -> repo.rollback(:formato_invalido)
-          end
-
-          # 3) Insertar el nuevo producto
-          insert_sql = """
-            INSERT INTO producto (id_producto, id_album, id_formato, precio, stock)
-            VALUES (
-              (SELECT COALESCE(MAX(id_producto), 0) + 1 FROM producto),
-              $1, $2, $3, $4
-            )
-          """
-
-          case repo.query(insert_sql, [
-                 String.to_integer(id_album),
-                 String.to_integer(id_formato),
-                 Decimal.new(precio),
-                 String.to_integer(stock)
-               ]) do
-            {:ok, _} -> :ok
-            {:error, reason} -> repo.rollback(reason)
-          end
-        end)
+        StoreProcedures.create_product(
+          String.to_integer(id_album),
+          String.to_integer(id_formato),
+          Decimal.new(precio),
+          String.to_integer(stock)
+        )
 
       case result do
-        {:ok, _} ->
+        {:ok, %{message: _message, id_producto: _id_producto}} ->
           {:noreply,
            socket
            |> refrescar_datos()
            |> assign(:modal, nil)
            |> put_flash(:info, "Producto creado correctamente.")}
 
-        {:error, :album_no_encontrado} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             "El álbum indicado no existe. Operación revertida (ROLLBACK)."
-           )}
-
-        {:error, :formato_invalido} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             "El formato indicado no es válido. Operación revertida (ROLLBACK)."
-           )}
-
-        {:error, _} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             "Error al crear el producto. Operación revertida (ROLLBACK)."
-           )}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
       end
     else
       {:noreply, put_flash(socket, :error, "Acceso denegado.")}
@@ -224,21 +162,22 @@ defmodule TiendaAlbumesWeb.InventarioLive do
       %{"_id" => id, "precio" => precio, "stock" => stock} = params
 
       result =
-        Repo.query(
-          "UPDATE producto SET precio = $1, stock = $2 WHERE id_producto = $3",
-          [Decimal.new(precio), String.to_integer(stock), String.to_integer(id)]
+        StoreProcedures.update_product(
+          String.to_integer(id),
+          Decimal.new(precio),
+          String.to_integer(stock)
         )
 
       case result do
-        {:ok, _} ->
+        {:ok, _message} ->
           {:noreply,
            socket
            |> refrescar_datos()
            |> assign(:modal, nil)
            |> put_flash(:info, "Producto actualizado.")}
 
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Error al actualizar.")}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
       end
     else
       {:noreply, put_flash(socket, :error, "Acceso denegado.")}
@@ -248,12 +187,16 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   # ── Eliminar producto ─────────────────────────
   def handle_event("eliminar_producto", %{"id" => id}, socket) do
     if socket.assigns.puede_eliminar_producto do
-      Repo.query("DELETE FROM producto WHERE id_producto = $1", [String.to_integer(id)])
+      case StoreProcedures.delete_product(String.to_integer(id)) do
+        {:ok, _message} ->
+          {:noreply,
+           socket
+           |> refrescar_datos()
+           |> put_flash(:info, "Producto eliminado.")}
 
-      {:noreply,
-       socket
-       |> refrescar_datos()
-       |> put_flash(:info, "Producto eliminado.")}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
+      end
     else
       {:noreply, put_flash(socket, :error, "Acceso denegado.")}
     end
@@ -640,6 +583,15 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   defp sort_value(value) when is_binary(value), do: String.downcase(value)
   defp sort_value(nil), do: ""
   defp sort_value(value), do: value
+
+  defp format_procedure_error(%Postgrex.Error{} = error), do: Exception.message(error)
+
+  defp format_procedure_error(%DBConnection.ConnectionError{} = error),
+    do: Exception.message(error)
+
+  defp format_procedure_error(%{message: message}) when is_binary(message), do: message
+  defp format_procedure_error(reason) when is_binary(reason), do: reason
+  defp format_procedure_error(reason), do: inspect(reason)
 
   attr :label, :string, required: true
   attr :table, :string, required: true

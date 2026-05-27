@@ -2,6 +2,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
   use TiendaAlbumesWeb, :live_view
 
   alias TiendaAlbumes.Repo
+  alias TiendaAlbumes.StoreProcedures
   alias TiendaAlbumesWeb.RoleAccess
 
   @impl true
@@ -87,8 +88,8 @@ defmodule TiendaAlbumesWeb.VentasLive do
     {:noreply, socket |> assign(:modal, nil) |> assign(:venta_detalle, nil)}
   end
 
-  # ── Registrar venta con transacción explícita + ROLLBACK ─────────────────────
-  # SQL: transacción explícita, subquery para MAX(id), UPDATE de stock
+  # ── Registrar venta vía stored procedure ────────────────────────────────────
+  # El procedure encapsula la transacción y el rollback si algo falla.
   def handle_event("guardar_venta", params, socket) do
     id_cliente = String.to_integer(params["id_cliente"])
     id_empleado = String.to_integer(params["id_empleado"])
@@ -103,68 +104,10 @@ defmodule TiendaAlbumesWeb.VentasLive do
       end)
       |> Enum.filter(fn {id, _} -> id > 0 end)
 
-    result =
-      Repo.transaction(fn ->
-        # 1. Insertar la compra — subquery para generar el ID
-        case Repo.query(
-               """
-                 INSERT INTO compra (id_compra, fecha, id_cliente, id_empleado)
-                 VALUES (
-                   (SELECT COALESCE(MAX(id_compra), 0) + 1 FROM compra),
-                   $1, $2, $3
-                 )
-                 RETURNING id_compra
-               """,
-               [fecha, id_cliente, id_empleado]
-             ) do
-          {:ok, %{rows: [[id_compra]]}} ->
-            # 2. Por cada producto: validar stock con EXISTS, insertar detalle, descontar stock
-            Enum.each(items, fn {id_producto, cantidad} ->
-              # Validar stock suficiente con subquery EXISTS
-              case Repo.query(
-                     """
-                       SELECT EXISTS (
-                         SELECT 1 FROM producto
-                         WHERE id_producto = $1 AND stock >= $2
-                       )
-                     """,
-                     [id_producto, cantidad]
-                   ) do
-                {:ok, %{rows: [[true]]}} -> :ok
-                _ -> Repo.rollback({:stock_insuficiente, id_producto})
-              end
-
-              # Obtener precio actual
-              {:ok, %{rows: [[precio]]}} =
-                Repo.query("SELECT precio FROM producto WHERE id_producto = $1", [id_producto])
-
-              # Insertar detalle
-              Repo.query(
-                """
-                  INSERT INTO detalle_compra (id_compra, id_producto, cantidad, precio_unitario)
-                  VALUES ($1, $2, $3, $4)
-                """,
-                [id_compra, id_producto, cantidad, precio]
-              )
-
-              # Descontar stock
-              Repo.query(
-                """
-                  UPDATE producto SET stock = stock - $1 WHERE id_producto = $2
-                """,
-                [cantidad, id_producto]
-              )
-            end)
-
-            id_compra
-
-          {:error, reason} ->
-            Repo.rollback(reason)
-        end
-      end)
+    result = StoreProcedures.register_sale(id_cliente, id_empleado, fecha, items)
 
     case result do
-      {:ok, _} ->
+      {:ok, %{id_compra: _id_compra, message: _message}} ->
         {:noreply,
          socket
          |> assign(:productos, listar_productos_disponibles())
@@ -172,17 +115,8 @@ defmodule TiendaAlbumesWeb.VentasLive do
          |> refrescar_ventas()
          |> put_flash(:info, "Venta registrada correctamente.")}
 
-      {:error, {:stock_insuficiente, id}} ->
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           "Stock insuficiente para el producto ##{id}. Operación revertida (ROLLBACK)."
-         )}
-
-      {:error, _} ->
-        {:noreply,
-         put_flash(socket, :error, "Error al registrar la venta. Operación revertida (ROLLBACK).")}
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
     end
   end
 
@@ -190,29 +124,18 @@ defmodule TiendaAlbumesWeb.VentasLive do
   def handle_event("eliminar_venta", %{"id" => id}, socket) do
     if socket.assigns.puede_eliminar_venta do
       id_int = String.to_integer(id)
-      # Restaurar stock antes de eliminar
-      Repo.transaction(fn ->
-        {:ok, %{rows: items}} =
-          Repo.query("SELECT id_producto, cantidad FROM detalle_compra WHERE id_compra = $1", [
-            id_int
-          ])
 
-        Enum.each(items, fn [id_prod, cant] ->
-          Repo.query("UPDATE producto SET stock = stock + $1 WHERE id_producto = $2", [
-            cant,
-            id_prod
-          ])
-        end)
+      case StoreProcedures.delete_sale(id_int) do
+        {:ok, _message} ->
+          {:noreply,
+           socket
+           |> assign(:productos, listar_productos_disponibles())
+           |> refrescar_ventas()
+           |> put_flash(:info, "Venta eliminada y stock restaurado.")}
 
-        Repo.query("DELETE FROM detalle_compra WHERE id_compra = $1", [id_int])
-        Repo.query("DELETE FROM compra WHERE id_compra = $1", [id_int])
-      end)
-
-      {:noreply,
-       socket
-       |> assign(:productos, listar_productos_disponibles())
-       |> refrescar_ventas()
-       |> put_flash(:info, "Venta eliminada y stock restaurado.")}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
+      end
     else
       {:noreply, put_flash(socket, :error, "Acceso denegado.")}
     end
@@ -413,6 +336,15 @@ defmodule TiendaAlbumesWeb.VentasLive do
   defp sort_value(value) when is_binary(value), do: String.downcase(value)
   defp sort_value(nil), do: ""
   defp sort_value(value), do: value
+
+  defp format_procedure_error(%Postgrex.Error{} = error), do: Exception.message(error)
+
+  defp format_procedure_error(%DBConnection.ConnectionError{} = error),
+    do: Exception.message(error)
+
+  defp format_procedure_error(%{message: message}) when is_binary(message), do: message
+  defp format_procedure_error(reason) when is_binary(reason), do: reason
+  defp format_procedure_error(reason), do: inspect(reason)
 
   attr :label, :string, required: true
   attr :table, :string, required: true
