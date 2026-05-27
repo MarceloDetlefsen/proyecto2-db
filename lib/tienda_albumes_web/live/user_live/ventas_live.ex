@@ -834,7 +834,9 @@ defmodule TiendaAlbumesWeb.VentasLive do
                       <%= for p <- @productos do %>
                         <option
                           value={p.id}
-                          selected={Map.get(@venta_form_params, "producto_#{idx}", "") == to_string(p.id)}
+                          selected={
+                            Map.get(@venta_form_params, "producto_#{idx}", "") == to_string(p.id)
+                          }
                         >
                           {p.titulo} — {p.formato} — ${p.precio} (stock: {p.stock})
                         </option>

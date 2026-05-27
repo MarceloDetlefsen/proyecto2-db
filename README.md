@@ -135,7 +135,7 @@ Esta sección reemplaza por completo la rúbrica anterior de la fase previa.
 | Al menos 5 stored procedures invocados desde el backend, no desde scripts independientes | 15 | ✅ | `sp_producto_crear`, `sp_producto_actualizar`, `sp_producto_eliminar`, `sp_venta_registrar`, `sp_venta_eliminar`. |
 | Al menos 1 stored procedure con parámetros de entrada/salida y manejo de excepciones | 10 | ✅ | `sp_venta_registrar` maneja `IN/OUT` y errores controlados. |
 | Al menos 1 transacción explícita con `ROLLBACK` implementada dentro de un stored procedure | 10 | ✅ | `sp_venta_registrar` valida stock y revierte si algo falla. |
-| ORM configurado y utilizado en al menos 3 operaciones CRUD de la aplicación | 10 | ⚠️ | Pendiente de completar en la capa de dominio para cumplir el criterio completo. |
+| ORM configurado y utilizado en al menos 3 operaciones CRUD de la aplicación | 10 | ✅ | Implementado con Ecto en el CRUD de clientes: crear, actualizar y eliminar. |
 | **Subtotal II** | **45** | | |
 
 ### Resumen

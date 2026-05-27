@@ -1,6 +1,7 @@
 defmodule TiendaAlbumesWeb.ClientesLive do
   use TiendaAlbumesWeb, :live_view
 
+  alias TiendaAlbumes.Clientes, as: ClientesContext
   alias TiendaAlbumes.Repo
   alias TiendaAlbumesWeb.RoleAccess
 
@@ -94,28 +95,16 @@ defmodule TiendaAlbumesWeb.ClientesLive do
 
   def handle_event("guardar_cliente", params, socket) do
     if socket.assigns.puede_crear_cliente do
-      result =
-        Repo.query(
-          """
-            INSERT INTO cliente (id_cliente, nombre, email, telefono, direccion)
-            VALUES (
-              (SELECT COALESCE(MAX(id_cliente), 0) + 1 FROM cliente),
-              $1, $2, $3, $4
-            )
-          """,
-          [params["nombre"], params["email"], params["telefono"], params["direccion"]]
-        )
-
-      case result do
-        {:ok, _} ->
+      case ClientesContext.create_cliente(params) do
+        {:ok, _cliente} ->
           {:noreply,
            socket
            |> assign(:modal, nil)
            |> refrescar_clientes()
            |> put_flash(:info, "Cliente creado correctamente.")}
 
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Error al crear el cliente.")}
+        {:error, changeset} ->
+          {:noreply, put_flash(socket, :error, format_changeset_error(changeset))}
       end
     else
       {:noreply, put_flash(socket, :error, "Acceso denegado.")}
@@ -124,31 +113,19 @@ defmodule TiendaAlbumesWeb.ClientesLive do
 
   def handle_event("actualizar_cliente", params, socket) do
     if socket.assigns.puede_editar_cliente do
-      result =
-        Repo.query(
-          """
-            UPDATE cliente SET nombre = $1, email = $2, telefono = $3, direccion = $4
-            WHERE id_cliente = $5
-          """,
-          [
-            params["nombre"],
-            params["email"],
-            params["telefono"],
-            params["direccion"],
-            String.to_integer(params["_id"])
-          ]
-        )
-
-      case result do
-        {:ok, _} ->
+      case ClientesContext.update_cliente(params["_id"], params) do
+        {:ok, _cliente} ->
           {:noreply,
            socket
            |> assign(:modal, nil)
            |> refrescar_clientes()
            |> put_flash(:info, "Cliente actualizado.")}
 
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Error al actualizar el cliente.")}
+        {:error, :not_found} ->
+          {:noreply, put_flash(socket, :error, "El cliente ya no existe.")}
+
+        {:error, changeset} ->
+          {:noreply, put_flash(socket, :error, format_changeset_error(changeset))}
       end
     else
       {:noreply, put_flash(socket, :error, "Acceso denegado.")}
@@ -157,12 +134,19 @@ defmodule TiendaAlbumesWeb.ClientesLive do
 
   def handle_event("eliminar_cliente", %{"id" => id}, socket) do
     if socket.assigns.puede_eliminar_cliente do
-      Repo.query("DELETE FROM cliente WHERE id_cliente = $1", [String.to_integer(id)])
+      case ClientesContext.delete_cliente(id) do
+        {:ok, _cliente} ->
+          {:noreply,
+           socket
+           |> refrescar_clientes()
+           |> put_flash(:info, "Cliente eliminado.")}
 
-      {:noreply,
-       socket
-       |> refrescar_clientes()
-       |> put_flash(:info, "Cliente eliminado.")}
+        {:error, :not_found} ->
+          {:noreply, put_flash(socket, :error, "El cliente ya no existe.")}
+
+        {:error, _reason} ->
+          {:noreply, put_flash(socket, :error, "Error al eliminar el cliente.")}
+      end
     else
       {:noreply, put_flash(socket, :error, "Acceso denegado.")}
     end
@@ -323,6 +307,26 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   defp sort_value(value) when is_binary(value), do: String.downcase(value)
   defp sort_value(nil), do: ""
   defp sort_value(value), do: value
+
+  defp format_changeset_error(%Ecto.Changeset{} = changeset) do
+    changeset.errors
+    |> Enum.map(fn {field, {message, _opts}} ->
+      "#{format_field_name(field)} #{message}"
+    end)
+    |> case do
+      [] -> "Error al guardar el cliente."
+      errors -> Enum.join(errors, ", ")
+    end
+  end
+
+  defp format_changeset_error(_), do: "Error al guardar el cliente."
+
+  defp format_field_name(field) when is_atom(field) do
+    field
+    |> Atom.to_string()
+    |> String.replace("_", " ")
+    |> String.capitalize()
+  end
 
   attr :label, :string, required: true
   attr :table, :string, required: true
