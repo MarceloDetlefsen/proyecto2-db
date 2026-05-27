@@ -24,6 +24,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
       |> assign(:modal, nil)
       |> assign(:venta_detalle, nil)
       |> assign(:items_nueva_venta, [%{id_producto: "", cantidad: 1}])
+      |> assign(:venta_form_params, %{})
       |> assign(:current_employee_role, role)
       |> assign(:puede_eliminar_venta, RoleAccess.can_delete_sales?(role))
       |> assign(:current_path, "/ventas")
@@ -71,7 +72,8 @@ defmodule TiendaAlbumesWeb.VentasLive do
     {:noreply,
      socket
      |> assign(:modal, :nueva)
-     |> assign(:items_nueva_venta, [%{id_producto: "", cantidad: 1}])}
+     |> assign(:items_nueva_venta, [%{id_producto: "", cantidad: 1}])
+     |> assign(:venta_form_params, %{})}
   end
 
   def handle_event("agregar_item", _params, socket) do
@@ -85,38 +87,43 @@ defmodule TiendaAlbumesWeb.VentasLive do
   end
 
   def handle_event("cerrar_modal", _params, socket) do
-    {:noreply, socket |> assign(:modal, nil) |> assign(:venta_detalle, nil)}
+    {:noreply,
+     socket
+     |> assign(:modal, nil)
+     |> assign(:venta_detalle, nil)
+     |> assign(:venta_form_params, %{})}
+  end
+
+  def handle_event("actualizar_venta_form", params, socket) do
+    {:noreply, assign(socket, :venta_form_params, params)}
   end
 
   # ── Registrar venta vía stored procedure ────────────────────────────────────
   # El procedure encapsula la transacción y el rollback si algo falla.
   def handle_event("guardar_venta", params, socket) do
-    id_cliente = String.to_integer(params["id_cliente"])
-    id_empleado = String.to_integer(params["id_empleado"])
-    fecha = params["fecha"]
+    params = merge_sale_form_params(socket.assigns.venta_form_params, params)
 
-    items =
-      params
-      |> Map.filter(fn {k, _} -> String.starts_with?(k, "producto_") end)
-      |> Enum.map(fn {"producto_" <> idx, id_prod} ->
-        cantidad = String.to_integer(params["cantidad_#{idx}"] || "1")
-        {String.to_integer(id_prod), cantidad}
-      end)
-      |> Enum.filter(fn {id, _} -> id > 0 end)
+    with {:ok, id_cliente} <- parse_required_int(params["id_cliente"]),
+         {:ok, id_empleado} <- parse_required_int(params["id_empleado"]),
+         {:ok, fecha_date} <- parse_required_date(params["fecha"]),
+         {:ok, items} <- build_sale_items(params) do
+      result = StoreProcedures.register_sale(id_cliente, id_empleado, fecha_date, items)
 
-    result = StoreProcedures.register_sale(id_cliente, id_empleado, fecha, items)
+      case result do
+        {:ok, _message} ->
+          {:noreply,
+           socket
+           |> assign(:productos, listar_productos_disponibles())
+           |> assign(:modal, nil)
+           |> refrescar_ventas()
+           |> put_flash(:info, "Venta registrada correctamente.")}
 
-    case result do
-      {:ok, %{id_compra: _id_compra, message: _message}} ->
-        {:noreply,
-         socket
-         |> assign(:productos, listar_productos_disponibles())
-         |> assign(:modal, nil)
-         |> refrescar_ventas()
-         |> put_flash(:info, "Venta registrada correctamente.")}
-
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
+      end
+    else
+      {:error, message} ->
+        {:noreply, put_flash(socket, :error, message)}
     end
   end
 
@@ -337,14 +344,68 @@ defmodule TiendaAlbumesWeb.VentasLive do
   defp sort_value(nil), do: ""
   defp sort_value(value), do: value
 
-  defp format_procedure_error(%Postgrex.Error{} = error), do: Exception.message(error)
+  defp parse_required_int(value) do
+    case Integer.parse(to_string(value || "")) do
+      {int, ""} -> {:ok, int}
+      _ -> {:error, "Debes seleccionar cliente, empleado y un producto válido."}
+    end
+  end
 
-  defp format_procedure_error(%DBConnection.ConnectionError{} = error),
-    do: Exception.message(error)
+  defp parse_required_date(value) do
+    case Date.from_iso8601(to_string(value || "")) do
+      {:ok, date} -> {:ok, date}
+      {:error, _} -> {:error, "La fecha de la venta no es válida."}
+    end
+  end
 
-  defp format_procedure_error(%{message: message}) when is_binary(message), do: message
-  defp format_procedure_error(reason) when is_binary(reason), do: reason
-  defp format_procedure_error(reason), do: inspect(reason)
+  defp build_sale_items(params) do
+    items =
+      0..20
+      |> Enum.reduce([], fn idx, acc ->
+        product_key = "producto_#{idx}"
+
+        case params[product_key] do
+          nil ->
+            acc
+
+          "" ->
+            acc
+
+          "0" ->
+            acc
+
+          id_prod ->
+            cantidad = params["cantidad_#{idx}"] || "1"
+
+            case {Integer.parse(to_string(id_prod)), Integer.parse(to_string(cantidad))} do
+              {{id, ""}, {qty, ""}} when id > 0 and qty > 0 ->
+                [{id, qty} | acc]
+
+              _ ->
+                acc
+            end
+        end
+      end)
+      |> Enum.reverse()
+
+    if items == [] do
+      {:error, "Debes seleccionar al menos un producto en la venta."}
+    else
+      {:ok, items}
+    end
+  end
+
+  defp merge_sale_form_params(stored_params, submitted_params) do
+    Enum.reduce(stored_params || %{}, submitted_params, fn {key, stored_value}, acc ->
+      case Map.get(acc, key) do
+        nil -> Map.put(acc, key, stored_value)
+        "" -> Map.put(acc, key, stored_value)
+        _ -> acc
+      end
+    end)
+  end
+
+  defp format_procedure_error(reason), do: to_string(reason)
 
   attr :label, :string, required: true
   attr :table, :string, required: true
@@ -692,7 +753,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
               Registra compra, valida stock y descuenta unidades en una sola transacción
             </p>
 
-            <form phx-submit="guardar_venta">
+            <form phx-change="actualizar_venta_form" phx-submit="guardar_venta">
               <%!-- Datos de la venta --%>
               <div class="grid grid-cols-3 gap-3 mb-5">
                 <div>
@@ -703,7 +764,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
                     type="date"
                     name="fecha"
                     required
-                    value={Date.utc_today() |> Date.to_string()}
+                    value={Map.get(@venta_form_params, "fecha", Date.utc_today() |> Date.to_string())}
                     class="input input-sm w-full"
                     style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
                   />
@@ -720,7 +781,12 @@ defmodule TiendaAlbumesWeb.VentasLive do
                   >
                     <option value="">Seleccionar...</option>
                     <%= for {nombre, id} <- @clientes do %>
-                      <option value={id}>{nombre}</option>
+                      <option
+                        value={id}
+                        selected={Map.get(@venta_form_params, "id_cliente", "") == to_string(id)}
+                      >
+                        {nombre}
+                      </option>
                     <% end %>
                   </select>
                 </div>
@@ -736,7 +802,12 @@ defmodule TiendaAlbumesWeb.VentasLive do
                   >
                     <option value="">Seleccionar...</option>
                     <%= for {nombre, id} <- @empleados do %>
-                      <option value={id}>{nombre}</option>
+                      <option
+                        value={id}
+                        selected={Map.get(@venta_form_params, "id_empleado", "") == to_string(id)}
+                      >
+                        {nombre}
+                      </option>
                     <% end %>
                   </select>
                 </div>
@@ -761,7 +832,10 @@ defmodule TiendaAlbumesWeb.VentasLive do
                     >
                       <option value="0">Seleccionar...</option>
                       <%= for p <- @productos do %>
-                        <option value={p.id}>
+                        <option
+                          value={p.id}
+                          selected={Map.get(@venta_form_params, "producto_#{idx}", "") == to_string(p.id)}
+                        >
                           {p.titulo} — {p.formato} — ${p.precio} (stock: {p.stock})
                         </option>
                       <% end %>
@@ -775,7 +849,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
                       type="number"
                       name={"cantidad_#{idx}"}
                       min="1"
-                      value="1"
+                      value={Map.get(@venta_form_params, "cantidad_#{idx}", "1")}
                       class="input input-sm w-full"
                       style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
                     />

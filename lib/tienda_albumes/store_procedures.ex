@@ -6,29 +6,60 @@ defmodule TiendaAlbumes.StoreProcedures do
   alias TiendaAlbumes.Repo
 
   def create_product(id_album, id_formato, precio, stock) do
-    with {:ok, [estado, mensaje, id_producto]} <-
-           call_one_row(
-             "CALL sp_producto_crear($1::INT, $2::INT, $3::NUMERIC, $4::INT, NULL, NULL, NULL)",
-             [id_album, id_formato, precio, stock]
-           ) do
-      build_result(estado, mensaje, :id_producto, id_producto)
+    case do_call("""
+         DO $$
+         DECLARE
+           v_estado text;
+           v_mensaje text;
+           v_id_producto integer;
+         BEGIN
+           CALL public.sp_producto_crear(#{int_sql(id_album)}, #{int_sql(id_formato)}, #{numeric_sql(precio)}, #{int_sql(stock)}, v_estado, v_mensaje, v_id_producto);
+
+           IF v_estado <> 'ok' THEN
+             RAISE EXCEPTION '%', v_mensaje;
+           END IF;
+         END $$;
+         """) do
+      :ok -> {:ok, "Producto creado correctamente."}
+      {:error, reason} -> {:error, reason}
     end
   end
 
   def update_product(id_producto, precio, stock) do
-    with {:ok, [estado, mensaje]} <-
-           call_one_row(
-             "CALL sp_producto_actualizar($1::INT, $2::NUMERIC, $3::INT, NULL, NULL)",
-             [id_producto, precio, stock]
-           ) do
-      build_result(estado, mensaje)
+    case do_call("""
+         DO $$
+         DECLARE
+           v_estado text;
+           v_mensaje text;
+         BEGIN
+           CALL public.sp_producto_actualizar(#{int_sql(id_producto)}, #{numeric_sql(precio)}, #{int_sql(stock)}, v_estado, v_mensaje);
+
+           IF v_estado <> 'ok' THEN
+             RAISE EXCEPTION '%', v_mensaje;
+           END IF;
+         END $$;
+         """) do
+      :ok -> {:ok, "Producto actualizado correctamente."}
+      {:error, reason} -> {:error, reason}
     end
   end
 
   def delete_product(id_producto) do
-    with {:ok, [estado, mensaje]} <-
-           call_one_row("CALL sp_producto_eliminar($1::INT, NULL, NULL)", [id_producto]) do
-      build_result(estado, mensaje)
+    case do_call("""
+         DO $$
+         DECLARE
+           v_estado text;
+           v_mensaje text;
+         BEGIN
+           CALL public.sp_producto_eliminar(#{int_sql(id_producto)}, v_estado, v_mensaje);
+
+           IF v_estado <> 'ok' THEN
+             RAISE EXCEPTION '%', v_mensaje;
+           END IF;
+         END $$;
+         """) do
+      :ok -> {:ok, "Producto eliminado correctamente."}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -40,35 +71,55 @@ defmodule TiendaAlbumes.StoreProcedures do
       end)
       |> Jason.encode!()
 
-    with {:ok, [estado, mensaje, id_compra]} <-
-           call_one_row(
-             "CALL sp_venta_registrar($1::INT, $2::INT, $3::DATE, $4::jsonb, NULL, NULL, NULL)",
-             [id_cliente, id_empleado, fecha, payload]
-           ) do
-      build_result(estado, mensaje, :id_compra, id_compra)
+    case do_call("""
+         DO $$
+         DECLARE
+           v_estado text;
+           v_mensaje text;
+           v_id_compra integer;
+         BEGIN
+           CALL public.sp_venta_registrar(#{int_sql(id_cliente)}, #{int_sql(id_empleado)}, DATE '#{Date.to_iso8601(fecha)}', '#{escape_sql_string(payload)}'::jsonb, v_estado, v_mensaje, v_id_compra);
+
+           IF v_estado <> 'ok' THEN
+             RAISE EXCEPTION '%', v_mensaje;
+           END IF;
+         END $$;
+         """) do
+      :ok -> {:ok, "Venta registrada correctamente."}
+      {:error, reason} -> {:error, reason}
     end
   end
 
   def delete_sale(id_compra) do
-    with {:ok, [estado, mensaje]} <-
-           call_one_row("CALL sp_venta_eliminar($1::INT, NULL, NULL)", [id_compra]) do
-      build_result(estado, mensaje)
+    case do_call("""
+         DO $$
+         DECLARE
+           v_estado text;
+           v_mensaje text;
+         BEGIN
+           CALL public.sp_venta_eliminar(#{int_sql(id_compra)}, v_estado, v_mensaje);
+
+           IF v_estado <> 'ok' THEN
+             RAISE EXCEPTION '%', v_mensaje;
+           END IF;
+         END $$;
+         """) do
+      :ok -> {:ok, "Venta eliminada correctamente."}
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp call_one_row(sql, params) do
-    case Repo.query(sql, params) do
-      {:ok, %{rows: [row]}} -> {:ok, row}
-      {:ok, %{rows: []}} -> {:error, :empty_result}
-      {:error, error} -> {:error, error}
+  defp do_call(sql) do
+    case Repo.query(sql, []) do
+      {:ok, _result} -> :ok
+      {:error, error} -> {:error, Exception.message(error)}
     end
   end
 
-  defp build_result("ok", mensaje), do: {:ok, mensaje}
-  defp build_result("error", mensaje), do: {:error, mensaje}
-  defp build_result(other, mensaje), do: {:error, "#{other}: #{mensaje}"}
+  defp int_sql(value), do: Integer.to_string(value)
 
-  defp build_result("ok", mensaje, key, value), do: {:ok, %{key => value, message: mensaje}}
-  defp build_result("error", mensaje, _key, _value), do: {:error, mensaje}
-  defp build_result(other, mensaje, _key, _value), do: {:error, "#{other}: #{mensaje}"}
+  defp numeric_sql(%Decimal{} = value), do: Decimal.to_string(value)
+  defp numeric_sql(value), do: to_string(value)
+
+  defp escape_sql_string(value), do: value |> to_string() |> String.replace("'", "''")
 end

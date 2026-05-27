@@ -143,7 +143,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
         )
 
       case result do
-        {:ok, %{message: _message, id_producto: _id_producto}} ->
+        {:ok, _message} ->
           {:noreply,
            socket
            |> refrescar_datos()
@@ -606,14 +606,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   defp sort_value(nil), do: ""
   defp sort_value(value), do: value
 
-  defp format_procedure_error(%Postgrex.Error{} = error), do: Exception.message(error)
-
-  defp format_procedure_error(%DBConnection.ConnectionError{} = error),
-    do: Exception.message(error)
-
-  defp format_procedure_error(%{message: message}) when is_binary(message), do: message
-  defp format_procedure_error(reason) when is_binary(reason), do: reason
-  defp format_procedure_error(reason), do: inspect(reason)
+  defp format_procedure_error(reason), do: to_string(reason)
 
   attr :label, :string, required: true
   attr :table, :string, required: true
