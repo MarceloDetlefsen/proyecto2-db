@@ -311,8 +311,11 @@ defmodule TiendaAlbumesWeb.Layouts do
       </nav>
     </header>
 
-    <main class="px-6 py-8">
-      <div class="mx-auto max-w-5xl">
+    <main class="px-4 pt-10 pb-6 sm:px-6 sm:pt-12 lg:px-8 lg:pt-14 xl:px-10 xl:pt-16">
+      <div
+        class="mx-auto w-full"
+        style="max-width: 92rem;"
+      >
         {render_slot(@inner_block)}
       </div>
     </main>

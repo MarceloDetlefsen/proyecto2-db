@@ -423,7 +423,7 @@ defmodule TiendaAlbumesWeb.ReportesLive do
       perfil_tab={@perfil_tab}
       perfil_error={@perfil_error}
     >
-      <div class="mb-6 flex items-center justify-between">
+      <div class="mt-6 mb-6 flex items-center justify-between sm:mt-8 lg:mt-10">
         <div>
           <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);">
             Análisis

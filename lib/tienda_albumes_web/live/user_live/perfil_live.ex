@@ -117,7 +117,7 @@ defmodule TiendaAlbumesWeb.PerfilLive do
       perfil_error={@perfil_error}
     >
       <%!-- Encabezado --%>
-      <div class="mb-6">
+      <div class="mt-6 mb-6 sm:mt-8 lg:mt-10">
         <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);">
           Cuenta
         </p>

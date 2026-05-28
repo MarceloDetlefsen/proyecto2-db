@@ -375,7 +375,7 @@ defmodule TiendaAlbumesWeb.ClientesLive do
       perfil_error={@perfil_error}
     >
       <%!-- ENCABEZADO --%>
-      <div class="mb-6 flex items-center justify-between">
+      <div class="mt-6 mb-6 flex items-center justify-between sm:mt-8 lg:mt-10">
         <div>
           <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);">
             Directorio

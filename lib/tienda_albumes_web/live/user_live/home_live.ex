@@ -135,7 +135,10 @@ defmodule TiendaAlbumesWeb.HomeLive do
     >
       <%!-- HERO --%>
       <div
-        class="rounded-box border p-8 mb-8 flex items-center justify-between overflow-hidden"
+        class={[
+          "rounded-box border p-8 mb-8 flex items-center justify-between overflow-hidden",
+          "mt-6 sm:mt-8 lg:mt-10"
+        ]}
         style="background-color: var(--c-bg-surface); border-color: var(--c-border); position: relative;"
       >
         <%!-- fondo decorativo --%>
