@@ -2,32 +2,43 @@ defmodule TiendaAlbumesWeb.ReportesLive do
   use TiendaAlbumesWeb, :live_view
 
   alias TiendaAlbumes.Repo
+  alias TiendaAlbumesWeb.RoleAccess
 
   @impl true
   def mount(_params, _session, socket) do
-    filtros = %{
-      "formato" => "",
-      "anio" => "",
-      "margen_min" => "",
-      "min_ventas" => "1",
-      "genero_padre" => ""
-    }
+    role = socket.assigns.current_scope.employee_role
 
-    {:ok,
-     socket
-     |> assign(:current_path, "/reportes")
-     |> assign(:tab_activa, "productos_mas_vendidos")
-     |> assign(:sorts, %{
-       productos_mas_vendidos: %{field: :total_vendido, direction: :desc},
-       ingresos_periodo: %{field: :anio_mes, direction: :asc},
-       margen_producto: %{field: :margen_pct, direction: :desc},
-       empleados_ventas: %{field: :total_vendido, direction: :desc},
-       generos_vendidos: %{field: :unidades, direction: :desc}
-     })
-     |> assign(:filtros, filtros)
-     |> assign(:anios, listar_anios())
-     |> assign(:generos_padre, listar_generos_padre())
-     |> refrescar_reportes(filtros)}
+    if RoleAccess.can_access_reports?(role) do
+      filtros = %{
+        "formato" => "",
+        "anio" => "",
+        "margen_min" => "",
+        "min_ventas" => "1",
+        "genero_padre" => ""
+      }
+
+      {:ok,
+       socket
+       |> assign(:current_employee_role, role)
+       |> assign(:current_path, "/reportes")
+       |> assign(:tab_activa, "productos_mas_vendidos")
+       |> assign(:sorts, %{
+         productos_mas_vendidos: %{field: :total_vendido, direction: :desc},
+         ingresos_periodo: %{field: :anio_mes, direction: :asc},
+         margen_producto: %{field: :margen_pct, direction: :desc},
+         empleados_ventas: %{field: :total_vendido, direction: :desc},
+         generos_vendidos: %{field: :unidades, direction: :desc}
+       })
+       |> assign(:filtros, filtros)
+       |> assign(:anios, listar_anios())
+       |> assign(:generos_padre, listar_generos_padre())
+       |> refrescar_reportes(filtros)}
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "Acceso denegado.")
+       |> redirect(to: ~p"/")}
+    end
   end
 
   @impl true
@@ -412,7 +423,7 @@ defmodule TiendaAlbumesWeb.ReportesLive do
       perfil_tab={@perfil_tab}
       perfil_error={@perfil_error}
     >
-      <div class="mb-6 flex items-center justify-between">
+      <div class="mt-6 mb-6 flex items-center justify-between sm:mt-8 lg:mt-10">
         <div>
           <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);">
             Análisis

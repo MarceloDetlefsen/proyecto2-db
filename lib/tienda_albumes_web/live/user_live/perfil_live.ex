@@ -7,11 +7,13 @@ defmodule TiendaAlbumesWeb.PerfilLive do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
+    role = socket.assigns.current_scope.employee_role
 
     empleado = obtener_empleado_por_user(user.id)
 
     {:ok,
      socket
+     |> assign(:current_employee_role, role)
      |> assign(:current_path, "/perfil")
      |> assign(:empleado, empleado)
      |> assign(:user, user)
@@ -115,7 +117,7 @@ defmodule TiendaAlbumesWeb.PerfilLive do
       perfil_error={@perfil_error}
     >
       <%!-- Encabezado --%>
-      <div class="mb-6">
+      <div class="mt-6 mb-6 sm:mt-8 lg:mt-10">
         <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);">
           Cuenta
         </p>

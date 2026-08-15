@@ -1,3 +1,4 @@
+alias TiendaAlbumes.Accounts
 alias TiendaAlbumes.Repo
 
 # ─────────────────────────────────────────────────────────────
@@ -66,7 +67,8 @@ INSERT INTO artista VALUES
 (57,'Midwife','USA'),
 (58,'Ethel Cain','USA'),
 (59,'Weyes Blood','USA'),
-(60,'Jessica Pratt','USA')
+(60,'Jessica Pratt','USA'),
+(61,'Black Country, New Road','UK')
 """)
 
 # ─────────────────────────────────────────────────────────────
@@ -129,7 +131,7 @@ INSERT INTO album VALUES
 (26,'To Pimp a Butterfly',2015,26),
 (27,'good kid, m.A.A.d city',2012,26),
 (28,'DAMN.',2017,26),
-(29,'Mr. Wonderful',2020,26),
+(29,'Ants From Up There',2022,61),
 (30,'Operation: Doomsday',1999,27),
 (31,'Madvillainy',2004,27),
 (32,'MM..FOOD',2004,27),
@@ -213,7 +215,7 @@ INSERT INTO album_genero VALUES
 (11,5),(12,2),(13,8),(14,7),(15,8),
 (16,8),(17,7),(18,7),(19,9),(20,1),
 (21,2),(22,7),(23,7),(24,10),(25,5),
-(26,13),(26,14),(27,11),(28,11),(29,12),
+(26,13),(26,14),(27,11),(28,11),(29,2),
 (30,12),(31,12),(32,12),(33,14),(34,14),
 (35,12),(36,12),(37,12),(38,12),(39,12),
 (40,12),(41,12),(42,15),(43,15),(44,13),
@@ -223,8 +225,8 @@ INSERT INTO album_genero VALUES
 (58,2),(59,2),(60,10),(61,2),(62,16),
 (63,16),(64,18),(65,9),(66,9),(67,16),
 (68,16),(69,8),(70,16),(71,16),(72,7),
-(73,7),(74,8),(75,8),(76,17),(77,18),
-(77,20),(78,20),(79,20),(80,6),(81,6),
+(73,7),(74,8),(75,8),(76,17),(77,20),
+(78,20),(79,20),(80,6),(81,6),
 (82,2),(83,8),(84,8),(85,8),(86,8),
 (87,8),(88,8),(89,9),(90,9),(91,2),
 (92,2),(93,7),(94,7),(95,9),(96,9),
@@ -515,18 +517,76 @@ INSERT INTO cliente VALUES
 # EMPLEADOS — 10 (8 originales + 2 nuevos)
 # ─────────────────────────────────────────────────────────────
 Repo.query!("""
-INSERT INTO empleado VALUES
-(1,'Carlos Monterroso','Gerente','5552-0001'),
-(2,'Luisa Cifuentes','Vendedor Senior','5552-0002'),
-(3,'Marco Ajú','Vendedor','5552-0003'),
-(4,'Diana Batz','Vendedor','5552-0004'),
-(5,'Rodrigo Chaj','Vendedor Junior','5552-0005'),
-(6,'Fernanda Coy','Cajero','5552-0006'),
-(7,'Sebastián Tum','Cajero','5552-0007'),
-(8,'Valeria Xoc','Cajero','5552-0008'),
-(9,'Jorge Quiñones','Vendedor Senior','5552-0009'),
-(10,'Brenda Toc','Vendedor','5552-0010')
+INSERT INTO empleado (id_empleado, nombre, puesto, telefono, db_role) VALUES
+(1,'Carlos Monterroso','Gerente','5552-0001','role_gerente'),
+(2,'Luisa Cifuentes','Vendedor Senior','5552-0002','role_vendedor_senior'),
+(3,'Marco Ajú','Vendedor','5552-0003','role_vendedor'),
+(4,'Diana Batz','Vendedor','5552-0004',NULL),
+(5,'Rodrigo Chaj','Vendedor Junior','5552-0005','role_vendedor_junior'),
+(6,'Fernanda Coy','Cajero','5552-0006','role_cajero'),
+(7,'Sebastián Tum','Cajero','5552-0007',NULL),
+(8,'Valeria Xoc','Cajero','5552-0008',NULL),
+(9,'Jorge Quiñones','Vendedor Senior','5552-0009',NULL),
+(10,'Brenda Toc','Vendedor','5552-0010',NULL)
 """)
+
+role_users = [
+  %{
+    email: "gerente@heritage.local",
+    password: "Gerente12345!",
+    id_empleado: 1,
+    db_role: "role_gerente"
+  },
+  %{
+    email: "vendedor_senior@heritage.local",
+    password: "Senior12345!",
+    id_empleado: 2,
+    db_role: "role_vendedor_senior"
+  },
+  %{
+    email: "vendedor@heritage.local",
+    password: "Vendedor12345!",
+    id_empleado: 3,
+    db_role: "role_vendedor"
+  },
+  %{
+    email: "vendedor_junior@heritage.local",
+    password: "Junior12345!",
+    id_empleado: 5,
+    db_role: "role_vendedor_junior"
+  },
+  %{
+    email: "cajero@heritage.local",
+    password: "Cajero12345!",
+    id_empleado: 6,
+    db_role: "role_cajero"
+  }
+]
+
+Enum.each(role_users, fn %{
+                           email: email,
+                           password: password,
+                           id_empleado: id_empleado,
+                           db_role: db_role
+                         } ->
+  user =
+    case Accounts.get_user_by_email(email) do
+      nil ->
+        {:ok, user} = Accounts.register_user(%{email: email, password: password})
+        user
+
+      user ->
+        {:ok, {user, _expired_tokens}} =
+          Accounts.update_user_password(user, %{password: password})
+
+        user
+    end
+
+  Repo.query!(
+    "UPDATE empleado SET user_id = $1, db_role = $2 WHERE id_empleado = $3",
+    [user.id, db_role, id_empleado]
+  )
+end)
 
 # ─────────────────────────────────────────────────────────────
 # COMPRAS — 100 compras distribuidas 2024–2026

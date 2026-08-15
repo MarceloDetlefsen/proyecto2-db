@@ -1,21 +1,36 @@
 defmodule TiendaAlbumesWeb.ClientesLive do
   use TiendaAlbumesWeb, :live_view
 
+  alias TiendaAlbumes.Clientes, as: ClientesContext
   alias TiendaAlbumes.Repo
+  alias TiendaAlbumesWeb.RoleAccess
 
   @impl true
   def mount(_params, _session, socket) do
-    socket =
-      socket
-      |> assign(:sorts, %{clientes: %{field: :total_gastado, direction: :desc}})
-      |> assign(:filtros, %{"nombre" => "", "solo_compradores" => "false"})
-      |> assign(:modal, nil)
-      |> assign(:cliente_perfil, nil)
-      |> assign(:cliente_editando, nil)
-      |> assign(:current_path, "/clientes")
-      |> refrescar_clientes()
+    role = socket.assigns.current_scope.employee_role
 
-    {:ok, socket}
+    if RoleAccess.can_access_clients?(role) do
+      socket =
+        socket
+        |> assign(:sorts, %{clientes: %{field: :total_gastado, direction: :desc}})
+        |> assign(:filtros, %{"nombre" => "", "solo_compradores" => "false"})
+        |> assign(:modal, nil)
+        |> assign(:cliente_perfil, nil)
+        |> assign(:cliente_editando, nil)
+        |> assign(:current_employee_role, role)
+        |> assign(:puede_crear_cliente, RoleAccess.can_create_clients?(role))
+        |> assign(:puede_editar_cliente, RoleAccess.can_update_clients?(role))
+        |> assign(:puede_eliminar_cliente, RoleAccess.can_delete_clients?(role))
+        |> assign(:current_path, "/clientes")
+        |> refrescar_clientes()
+
+      {:ok, socket}
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "Acceso denegado.")
+       |> redirect(to: ~p"/")}
+    end
   end
 
   # ──────────────────────────────────────────────
@@ -54,12 +69,20 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   end
 
   def handle_event("nuevo_cliente", _params, socket) do
-    {:noreply, socket |> assign(:modal, :nuevo) |> assign(:cliente_editando, nil)}
+    if socket.assigns.puede_crear_cliente do
+      {:noreply, socket |> assign(:modal, :nuevo) |> assign(:cliente_editando, nil)}
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   def handle_event("editar_cliente", %{"id" => id}, socket) do
-    cliente = obtener_cliente(String.to_integer(id))
-    {:noreply, socket |> assign(:modal, :editar) |> assign(:cliente_editando, cliente)}
+    if socket.assigns.puede_editar_cliente do
+      cliente = obtener_cliente(String.to_integer(id))
+      {:noreply, socket |> assign(:modal, :editar) |> assign(:cliente_editando, cliente)}
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   def handle_event("cerrar_modal", _params, socket) do
@@ -71,67 +94,62 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   end
 
   def handle_event("guardar_cliente", params, socket) do
-    result =
-      Repo.query(
-        """
-          INSERT INTO cliente (id_cliente, nombre, email, telefono, direccion)
-          VALUES (
-            (SELECT COALESCE(MAX(id_cliente), 0) + 1 FROM cliente),
-            $1, $2, $3, $4
-          )
-        """,
-        [params["nombre"], params["email"], params["telefono"], params["direccion"]]
-      )
+    if socket.assigns.puede_crear_cliente do
+      case ClientesContext.create_cliente(params) do
+        {:ok, _cliente} ->
+          {:noreply,
+           socket
+           |> assign(:modal, nil)
+           |> refrescar_clientes()
+           |> put_flash(:info, "Cliente creado correctamente.")}
 
-    case result do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(:modal, nil)
-         |> refrescar_clientes()
-         |> put_flash(:info, "Cliente creado correctamente.")}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Error al crear el cliente.")}
+        {:error, changeset} ->
+          {:noreply, put_flash(socket, :error, format_changeset_error(changeset))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
     end
   end
 
   def handle_event("actualizar_cliente", params, socket) do
-    result =
-      Repo.query(
-        """
-          UPDATE cliente SET nombre = $1, email = $2, telefono = $3, direccion = $4
-          WHERE id_cliente = $5
-        """,
-        [
-          params["nombre"],
-          params["email"],
-          params["telefono"],
-          params["direccion"],
-          String.to_integer(params["_id"])
-        ]
-      )
+    if socket.assigns.puede_editar_cliente do
+      case ClientesContext.update_cliente(params["_id"], params) do
+        {:ok, _cliente} ->
+          {:noreply,
+           socket
+           |> assign(:modal, nil)
+           |> refrescar_clientes()
+           |> put_flash(:info, "Cliente actualizado.")}
 
-    case result do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(:modal, nil)
-         |> refrescar_clientes()
-         |> put_flash(:info, "Cliente actualizado.")}
+        {:error, :not_found} ->
+          {:noreply, put_flash(socket, :error, "El cliente ya no existe.")}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Error al actualizar el cliente.")}
+        {:error, changeset} ->
+          {:noreply, put_flash(socket, :error, format_changeset_error(changeset))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
     end
   end
 
   def handle_event("eliminar_cliente", %{"id" => id}, socket) do
-    Repo.query("DELETE FROM cliente WHERE id_cliente = $1", [String.to_integer(id)])
+    if socket.assigns.puede_eliminar_cliente do
+      case ClientesContext.delete_cliente(id) do
+        {:ok, _cliente} ->
+          {:noreply,
+           socket
+           |> refrescar_clientes()
+           |> put_flash(:info, "Cliente eliminado.")}
 
-    {:noreply,
-     socket
-     |> refrescar_clientes()
-     |> put_flash(:info, "Cliente eliminado.")}
+        {:error, :not_found} ->
+          {:noreply, put_flash(socket, :error, "El cliente ya no existe.")}
+
+        {:error, _reason} ->
+          {:noreply, put_flash(socket, :error, "Error al eliminar el cliente.")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   # ══════════════════════════════════════════════
@@ -290,6 +308,26 @@ defmodule TiendaAlbumesWeb.ClientesLive do
   defp sort_value(nil), do: ""
   defp sort_value(value), do: value
 
+  defp format_changeset_error(%Ecto.Changeset{} = changeset) do
+    changeset.errors
+    |> Enum.map(fn {field, {message, _opts}} ->
+      "#{format_field_name(field)} #{message}"
+    end)
+    |> case do
+      [] -> "Error al guardar el cliente."
+      errors -> Enum.join(errors, ", ")
+    end
+  end
+
+  defp format_changeset_error(_), do: "Error al guardar el cliente."
+
+  defp format_field_name(field) when is_atom(field) do
+    field
+    |> Atom.to_string()
+    |> String.replace("_", " ")
+    |> String.capitalize()
+  end
+
   attr :label, :string, required: true
   attr :table, :string, required: true
   attr :field, :atom, required: true
@@ -337,7 +375,7 @@ defmodule TiendaAlbumesWeb.ClientesLive do
       perfil_error={@perfil_error}
     >
       <%!-- ENCABEZADO --%>
-      <div class="mb-6 flex items-center justify-between">
+      <div class="mt-6 mb-6 flex items-center justify-between sm:mt-8 lg:mt-10">
         <div>
           <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);">
             Directorio
@@ -346,13 +384,15 @@ defmodule TiendaAlbumesWeb.ClientesLive do
             Clientes
           </h1>
         </div>
-        <button
-          phx-click="nuevo_cliente"
-          class="btn btn-sm"
-          style="background-color: var(--c-text-primary); color: var(--c-bg-page); border: none;"
-        >
-          + Nuevo Cliente
-        </button>
+        <%= if @puede_crear_cliente do %>
+          <button
+            phx-click="nuevo_cliente"
+            class="btn btn-sm"
+            style="background-color: var(--c-text-primary); color: var(--c-bg-page); border: none;"
+          >
+            + Nuevo Cliente
+          </button>
+        <% end %>
       </div>
 
       <%!-- FILTROS --%>
@@ -469,23 +509,27 @@ defmodule TiendaAlbumesWeb.ClientesLive do
                     >
                       Perfil
                     </button>
-                    <button
-                      phx-click="editar_cliente"
-                      phx-value-id={c.id}
-                      class="btn btn-xs"
-                      style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      phx-click="eliminar_cliente"
-                      phx-value-id={c.id}
-                      data-confirm="¿Eliminar este cliente?"
-                      class="btn btn-xs"
-                      style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
-                    >
-                      Eliminar
-                    </button>
+                    <%= if @puede_editar_cliente do %>
+                      <button
+                        phx-click="editar_cliente"
+                        phx-value-id={c.id}
+                        class="btn btn-xs"
+                        style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
+                      >
+                        Editar
+                      </button>
+                    <% end %>
+                    <%= if @puede_eliminar_cliente do %>
+                      <button
+                        phx-click="eliminar_cliente"
+                        phx-value-id={c.id}
+                        data-confirm="¿Eliminar este cliente?"
+                        class="btn btn-xs"
+                        style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
+                      >
+                        Eliminar
+                      </button>
+                    <% end %>
                   </div>
                 </td>
               </tr>

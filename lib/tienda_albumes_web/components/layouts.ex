@@ -1,7 +1,7 @@
 defmodule TiendaAlbumesWeb.Layouts do
   use TiendaAlbumesWeb, :html
 
-  alias TiendaAlbumes.Repo
+  alias TiendaAlbumesWeb.RoleAccess
 
   embed_templates "layouts/*"
 
@@ -14,22 +14,16 @@ defmodule TiendaAlbumesWeb.Layouts do
   slot :inner_block, required: true
 
   def app(assigns) do
-    {nombre_empleado, puesto_empleado, empleado_id, es_admin} =
+    {nombre_empleado, puesto_empleado, empleado_id, es_admin, employee_role} =
       case assigns[:current_scope] do
-        %{user: %{id: user_id}} when not is_nil(user_id) ->
-          case Repo.query(
-                 "SELECT nombre, puesto, id_empleado FROM empleado WHERE user_id = $1 LIMIT 1",
-                 [user_id]
-               ) do
-            {:ok, %{rows: [[nombre, puesto, emp_id]]}} ->
-              {nombre, puesto, emp_id, puesto == "Gerente"}
+        %{employee: %{nombre: nombre, puesto: puesto, id: emp_id}, employee_role: role} ->
+          {nombre, puesto, emp_id, role == "role_gerente", role}
 
-            _ ->
-              {nil, nil, nil, false}
-          end
+        %{user: %{email: email}} ->
+          {email, nil, nil, false, nil}
 
         _ ->
-          {nil, nil, nil, false}
+          {nil, nil, nil, false, nil}
       end
 
     assigns =
@@ -38,6 +32,11 @@ defmodule TiendaAlbumesWeb.Layouts do
       |> assign(:puesto_empleado, puesto_empleado)
       |> assign(:empleado_id, empleado_id)
       |> assign(:es_admin, es_admin)
+      |> assign(:current_employee_role, employee_role)
+      |> assign(:can_access_inventory, RoleAccess.can_access_inventory?(employee_role))
+      |> assign(:can_access_clients, RoleAccess.can_access_clients?(employee_role))
+      |> assign(:can_access_reports, RoleAccess.can_access_reports?(employee_role))
+      |> assign(:can_access_sales, RoleAccess.can_access_sales?(employee_role))
       # Estado del mini-modal de perfil rápido (solo para no-admin)
       |> assign_new(:perfil_modal_open, fn -> false end)
       |> assign_new(:perfil_tab, fn -> "password" end)
@@ -240,10 +239,18 @@ defmodule TiendaAlbumesWeb.Layouts do
         style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase;"
       >
         <%= if @current_scope do %>
-          <.nav_link href="/inventario" current_path={@current_path}>Inventario</.nav_link>
-          <.nav_link href="/ventas" current_path={@current_path}>Ventas</.nav_link>
-          <.nav_link href="/clientes" current_path={@current_path}>Clientes</.nav_link>
-          <.nav_link href="/reportes" current_path={@current_path}>Reportes</.nav_link>
+          <%= if @can_access_inventory do %>
+            <.nav_link href="/inventario" current_path={@current_path}>Inventario</.nav_link>
+          <% end %>
+          <%= if @can_access_sales do %>
+            <.nav_link href="/ventas" current_path={@current_path}>Ventas</.nav_link>
+          <% end %>
+          <%= if @can_access_clients do %>
+            <.nav_link href="/clientes" current_path={@current_path}>Clientes</.nav_link>
+          <% end %>
+          <%= if @can_access_reports do %>
+            <.nav_link href="/reportes" current_path={@current_path}>Reportes</.nav_link>
+          <% end %>
 
           <div class="w-px h-4" style="background-color: var(--c-border);"></div>
         <% end %>
@@ -304,8 +311,11 @@ defmodule TiendaAlbumesWeb.Layouts do
       </nav>
     </header>
 
-    <main class="px-6 py-8">
-      <div class="mx-auto max-w-5xl">
+    <main class="px-4 pt-10 pb-6 sm:px-6 sm:pt-12 lg:px-8 lg:pt-14 xl:px-10 xl:pt-16">
+      <div
+        class="mx-auto w-full"
+        style="max-width: 92rem;"
+      >
         {render_slot(@inner_block)}
       </div>
     </main>

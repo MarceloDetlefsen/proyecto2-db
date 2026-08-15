@@ -23,7 +23,7 @@ Este comando instala dependencias, crea la base de datos, ejecuta migraciones, c
 
 En desarrollo, el proyecto usa estos datos en `config/dev.exs`:
 
-- `username`: `proy2`
+- `username`: `proy3`
 - `password`: `secret`
 - `hostname`: `localhost`
 - `database`: `tienda_albumes_dev`
@@ -90,13 +90,19 @@ mix ecto.migrate
 mix format
 ```
 
-## 8. Acceso al primer usuario
+## 8. Acceso de prueba
 
-Dado que el sistema requiere que un empleado exista antes de crear una cuenta:
+Los seeds crean 5 cuentas fijas, una por rol, y las vinculan a su empleado correspondiente.
 
-1. Los seeds ya cargan 10 empleados sin cuenta vinculada.
-2. Ir a `/users/register`, seleccionar tu nombre de la lista y crear la cuenta.
-3. El primer empleado con puesto `Gerente` es **Carlos Monterroso** — registrarse con ese nombre da acceso de administrador.
+Credenciales:
+
+- `gerente@heritage.local` / `Gerente12345!`
+- `vendedor_senior@heritage.local` / `Senior12345!`
+- `vendedor@heritage.local` / `Vendedor12345!`
+- `vendedor_junior@heritage.local` / `Junior12345!`
+- `cajero@heritage.local` / `Cajero12345!`
+
+Si quieres crear más cuentas manualmente, sigue usando `/users/register` y selecciona un empleado sin cuenta.
 
 ## 9. Phoenix Tools
 

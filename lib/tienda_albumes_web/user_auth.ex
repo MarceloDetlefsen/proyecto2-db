@@ -6,6 +6,7 @@ defmodule TiendaAlbumesWeb.UserAuth do
 
   alias TiendaAlbumes.Accounts
   alias TiendaAlbumes.Accounts.Scope
+  alias TiendaAlbumesWeb.RoleAccess
 
   # Make the remember me cookie valid for 14 days. This should match
   # the session validity setting in UserToken.
@@ -67,8 +68,13 @@ defmodule TiendaAlbumesWeb.UserAuth do
   def fetch_current_scope_for_user(conn, _opts) do
     with {token, conn} <- ensure_user_token(conn),
          {user, token_inserted_at} <- Accounts.get_user_by_session_token(token) do
+      scope =
+        user
+        |> Scope.for_user()
+        |> Accounts.scope_with_employee()
+
       conn
-      |> assign(:current_scope, Scope.for_user(user))
+      |> assign(:current_scope, scope)
       |> maybe_reissue_user_session_token(user, token_inserted_at)
     else
       nil -> assign(conn, :current_scope, Scope.for_user(nil))
@@ -245,6 +251,34 @@ defmodule TiendaAlbumesWeb.UserAuth do
     end
   end
 
+  def require_reports_access(conn, _opts) do
+    role = current_employee_role(conn)
+
+    if RoleAccess.can_access_reports?(role) do
+      conn
+    else
+      conn
+      |> put_flash(:error, "Acceso denegado.")
+      |> redirect(to: ~p"/")
+      |> halt()
+    end
+  end
+
+  def authorize_role(socket, route, opts \\ []) do
+    role = current_employee_role(socket)
+
+    if RoleAccess.route_allowed?(role, route) do
+      {:ok, socket}
+    else
+      redirect_to = Keyword.get(opts, :redirect_to, ~p"/")
+
+      {:halt,
+       socket
+       |> Phoenix.LiveView.put_flash(:error, "Acceso denegado.")
+       |> Phoenix.LiveView.redirect(to: redirect_to)}
+    end
+  end
+
   defp mount_current_scope(socket, session) do
     Phoenix.Component.assign_new(socket, :current_scope, fn ->
       {user, _} =
@@ -252,9 +286,26 @@ defmodule TiendaAlbumesWeb.UserAuth do
           Accounts.get_user_by_session_token(user_token)
         end || {nil, nil}
 
-      Scope.for_user(user)
+      user
+      |> Scope.for_user()
+      |> Accounts.scope_with_employee()
     end)
   end
+
+  def current_employee_role(%{assigns: %{current_scope: %{employee_role: role}}}), do: role
+
+  def current_employee_role(%{assigns: %{current_scope: %{employee: employee}}}),
+    do: Scope.employee_role(employee)
+
+  def current_employee_role(%Plug.Conn{} = conn) do
+    case conn.assigns[:current_scope] do
+      %{employee_role: role} -> role
+      %{employee: employee} -> Scope.employee_role(employee)
+      _ -> nil
+    end
+  end
+
+  def current_employee_role(_), do: nil
 
   @doc "Returns the path to redirect to after log in."
   # the user was already logged in, redirect to settings

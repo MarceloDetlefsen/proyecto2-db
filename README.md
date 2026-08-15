@@ -1,11 +1,12 @@
 # Heritage Records — Tienda de Música
 
 Sistema interno para la operación de una tienda especializada en formatos físicos.
-Desarrollado como Proyecto 2 del curso **cc3088 - Bases de Datos 1**, Ciclo 1, 2026.
+Desarrollado como Proyecto 3 del curso **cc3088 - Bases de Datos 1**, Ciclo 1, 2026.
 
 ## Documentación
 
 - Guía de uso completa: [MANUAL_USUARIO.md](MANUAL_USUARIO.md)
+- Explicación de los roles definidos: [ROLES.md](ROLES.md)
 - Guía de desarrollo local: [DESARROLLO.md](DESARROLLO.md)
 
 ## Requisitos para Docker
@@ -37,7 +38,7 @@ docker run --rm elixir:1.16-alpine mix phx.gen.secret
 El archivo `.env` mínimo funcional luce así:
 
 ```env
-DB_USER=proy2
+DB_USER=proy3
 DB_PASSWORD=secret
 DB_NAME=tienda_albumes_prod
 PHX_HOST=localhost
@@ -84,9 +85,21 @@ docker compose up --build
 
 | Campo    | Valor                  |
 |----------|------------------------|
-| Usuario  | `proy2`                |
+| Usuario  | `proy3`                |
 | Password | `secret`               |
 | Base de datos | `tienda_albumes_prod` |
+
+## Credenciales de prueba de la app
+
+| Rol | Email | Password | Empleado |
+|---|---|---|---|
+| Gerente | `gerente@heritage.local` | `Gerente12345!` | Carlos Monterroso |
+| Vendedor Senior | `vendedor_senior@heritage.local` | `Senior12345!` | Luisa Cifuentes |
+| Vendedor | `vendedor@heritage.local` | `Vendedor12345!` | Marco Ajú |
+| Vendedor Junior | `vendedor_junior@heritage.local` | `Junior12345!` | Rodrigo Chaj |
+| Cajero | `cajero@heritage.local` | `Cajero12345!` | Fernanda Coy |
+
+Todos los usuarios usan la base de datos `proy3 / secret` al correr en Docker.
 
 ---
 
@@ -101,60 +114,37 @@ docker compose up --build
 
 ---
 
-## Tabla de puntaje — funcionalidades implementadas
+## Rúbrica de evaluación — Proyecto 3
 
-### I. Diseño de base de datos (40 pts posibles)
+Esta sección reemplaza por completo la rúbrica anterior de la fase previa.
 
-| Criterio | Pts | Estado | Detalle |
-|---|---|---|---|
-| Diagrama ER correcto: entidades, atributos, relaciones y cardinalidades | 8 | ✅ | 11 entidades: artista, album, genero, album_genero, formato, producto, proveedor, producto_proveedor, cliente, empleado, compra, detalle_compra |
-| Modelo relacional documentado (esquema en notación relacional) | 7 | ✅ | Incluido en documentación del proyecto |
-| Normalización justificada hasta 3FN | 10 | ✅ | Dependencias funcionales y pasos aplicados documentados |
-| DDL completo con PRIMARY KEY, FOREIGN KEY y NOT NULL | 5 | ✅ | Ver `priv/repo/migrations/20260424082540_create_all_tables.exs` |
-| Script de datos de prueba con al menos 25 registros por tabla | 5 | ✅ | `priv/repo/seeds.exs`: 60 artistas, 100 álbumes, 200 productos, 25 clientes, 10 empleados, 100 compras |
-| Índices definidos explícitamente (CREATE INDEX) en al menos 2 columnas justificadas | 5 | ✅ | Índices en `empleado.user_id` y `users_tokens(context, token)` vía migraciones |
-| **Subtotal I** | **40** | | |
-
-### II. SQL (50 pts posibles)
+### I. Seguridad y roles
 
 | Criterio | Pts | Estado | Detalle |
 |---|---|---|---|
-| 3 consultas con JOIN entre múltiples tablas, visibles en la UI | 10 | ✅ | (1) Inventario: `vista_productos_completa` une 5 tablas. (2) Ventas: `compra → cliente → empleado → detalle_compra`. (3) Detalle de venta: `detalle_compra → producto → album → artista → formato` |
-| 2 consultas con subquery (IN, EXISTS, correlacionado o en FROM) | 10 | ✅ | (1) Filtro por artista en inventario usa subquery `IN`. (2) Crear venta valida stock con subquery `EXISTS`. Filtro de solo compradores en clientes usa subquery `EXISTS`. Productos disponibles para venta usa subquery `IN` |
-| Consultas con GROUP BY, HAVING y funciones de agregación, visibles en la UI | 8 | ✅ | Estadísticas de inventario por formato (`GROUP BY f.nombre HAVING COUNT > 0`). Reportes de empleados (`HAVING COUNT(ventas) >= filtro`). Top artistas (`HAVING COUNT(productos) > 1`) |
-| Al menos 1 consulta usando CTE (WITH), visible en la UI | 5 | ✅ | Reporte de ingresos usa `WITH ventas_mensuales AS (...)` con window function `SUM() OVER` para acumulado. Estadísticas de inventario usa `WITH resumen_formato AS (...)` |
-| Al menos 1 VIEW utilizado por el backend para alimentar la UI | 5 | ✅ | `CREATE OR REPLACE VIEW vista_productos_completa` — une producto, album, artista, formato, genero. Toda la pantalla de Inventario se alimenta de este VIEW |
-| Al menos 1 transacción explícita con manejo de error y ROLLBACK | 12 | ✅ | Crear producto usa `Repo.transaction/1` con `Repo.rollback/1` explícito en caso de álbum inexistente o formato inválido. Registrar venta usa transacción con ROLLBACK por stock insuficiente. Eliminar venta restaura stock en transacción |
-| **Subtotal II** | **50** | | |
+| 5 roles definidos en el DBMS con `CREATE ROLE` y permisos granulares por tabla u operación mediante `GRANT` y `REVOKE` | 20 | ✅ | Roles definidos en PostgreSQL y documentados para restringir acceso por funcionalidad. |
+| Esquema de roles documentado: nombre de cada rol, tablas accesibles y operaciones permitidas | 10 | ✅ | Ver [ROLES.md](ROLES.md). |
+| Autenticación con sesión (`login/logout`) y un usuario de prueba funcional por cada rol incluido en el script de datos | 10 | ✅ | Autenticación implementada con `phx.gen.auth` y usuarios de prueba cargados por seeds. |
+| Rutas y vistas de la UI protegidas según el rol del usuario autenticado | 15 | ✅ | Navegación y acceso protegidos desde router y LiveViews según el rol de sesión. |
+| **Subtotal I** | **55** | | |
 
-### III. Aplicación web (35 pts posibles)
+### II. Stored Procedures y ORM
 
 | Criterio | Pts | Estado | Detalle |
 |---|---|---|---|
-| CRUD completo de al menos 2 entidades en la interfaz | 15 | ✅ | CRUD completo de **Productos** (inventario), **Clientes**, **Empleados** y **Ventas** (con detalle multi-ítem) |
-| Al menos 1 reporte visible en la UI con datos reales | 10 | ✅ | Pantalla `/reportes` con 5 reportes: más vendidos, ingresos por período, márgenes, empleados, géneros. Dashboard `/` con estadísticas globales en tiempo real |
-| Manejo visible de errores para el usuario (validaciones, mensajes) | 5 | ✅ | Flash alerts para errores y confirmaciones. Mensajes de ROLLBACK visibles. Validación de stock antes de vender. Modal bloqueado si no hay empleados disponibles para registro |
-| README con instrucciones funcionales y ejemplo de `docker compose up` | 5 | ✅ | Este archivo |
-| **Subtotal III** | **35** | | |
-
-### IV. Avanzado (15 pts posibles)
-
-| Criterio | Pts | Estado | Detalle |
-|---|---|---|---|
-| Autenticación de usuarios (login/logout con sesión) | 10 | ✅ | `phx.gen.auth` con email + contraseña. Sesión persistente con cookie. Roles: Gerente vs otros empleados. Vinculación usuario↔empleado obligatoria |
-| Exportar al menos 1 reporte a CSV desde la UI | 5 | ✅ | 5 reportes exportables a CSV desde `/reportes`: `productos_mas_vendidos.csv`, `ingresos_por_periodo.csv`, `margen_productos.csv`, `empleados_ventas.csv`, `generos_vendidos.csv` |
-| **Subtotal IV** | **15** | | |
+| Al menos 5 stored procedures invocados desde el backend, no desde scripts independientes | 15 | ✅ | `sp_producto_crear`, `sp_producto_actualizar`, `sp_producto_eliminar`, `sp_venta_registrar`, `sp_venta_eliminar`. |
+| Al menos 1 stored procedure con parámetros de entrada/salida y manejo de excepciones | 10 | ✅ | `sp_venta_registrar` maneja `IN/OUT` y errores controlados. |
+| Al menos 1 transacción explícita con `ROLLBACK` implementada dentro de un stored procedure | 10 | ✅ | `sp_venta_registrar` valida stock y revierte si algo falla. |
+| ORM configurado y utilizado en al menos 3 operaciones CRUD de la aplicación | 10 | ✅ | Implementado con Ecto en el CRUD de clientes: crear, actualizar y eliminar. |
+| **Subtotal II** | **45** | | |
 
 ### Resumen
 
-| Categoría | Puntos obtenidos | Puntos posibles |
-|---|---|---|
-| I. Diseño de base de datos | 40 | 40 |
-| II. SQL | 50 | 50 |
-| III. Aplicación web | 35 | 35 |
-| IV. Avanzado | 15 | 15 |
-| **Total** | **140** | **140** |
-| **Nota acreditable** | **100** | **100** |
+| Categoría | Puntos posibles |
+|---|---|
+| I. Seguridad y roles | 55 |
+| II. Stored Procedures y ORM | 45 |
+| **Total** | **100** |
 
 ---
 

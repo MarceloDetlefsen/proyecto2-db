@@ -18,7 +18,7 @@ defmodule TiendaAlbumes.Accounts.Scope do
 
   alias TiendaAlbumes.Accounts.User
 
-  defstruct user: nil
+  defstruct user: nil, employee: nil, employee_role: nil
 
   @doc """
   Creates a scope for the given user.
@@ -30,4 +30,25 @@ defmodule TiendaAlbumes.Accounts.Scope do
   end
 
   def for_user(nil), do: nil
+
+  def with_employee(%__MODULE__{} = scope, employee) do
+    %{scope | employee: employee, employee_role: employee_role(employee)}
+  end
+
+  def with_employee(nil, _employee), do: nil
+
+  def employee_role(%{db_role: role}) when is_binary(role) and role != "", do: role
+
+  def employee_role(%{puesto: puesto}) when is_binary(puesto) do
+    case puesto do
+      "Gerente" -> "role_gerente"
+      "Vendedor Senior" -> "role_vendedor_senior"
+      "Vendedor" -> "role_vendedor"
+      "Vendedor Junior" -> "role_vendedor_junior"
+      "Cajero" -> "role_cajero"
+      _ -> nil
+    end
+  end
+
+  def employee_role(_), do: nil
 end

@@ -2,9 +2,13 @@ defmodule TiendaAlbumesWeb.VentasLive do
   use TiendaAlbumesWeb, :live_view
 
   alias TiendaAlbumes.Repo
+  alias TiendaAlbumes.StoreProcedures
+  alias TiendaAlbumesWeb.RoleAccess
 
   @impl true
   def mount(_params, _session, socket) do
+    role = socket.assigns.current_scope.employee_role
+
     socket =
       socket
       |> assign(:sorts, %{ventas: %{field: :fecha, direction: :desc}})
@@ -20,6 +24,9 @@ defmodule TiendaAlbumesWeb.VentasLive do
       |> assign(:modal, nil)
       |> assign(:venta_detalle, nil)
       |> assign(:items_nueva_venta, [%{id_producto: "", cantidad: 1}])
+      |> assign(:venta_form_params, %{})
+      |> assign(:current_employee_role, role)
+      |> assign(:puede_eliminar_venta, RoleAccess.can_delete_sales?(role))
       |> assign(:current_path, "/ventas")
       |> refrescar_ventas()
 
@@ -65,7 +72,8 @@ defmodule TiendaAlbumesWeb.VentasLive do
     {:noreply,
      socket
      |> assign(:modal, :nueva)
-     |> assign(:items_nueva_venta, [%{id_producto: "", cantidad: 1}])}
+     |> assign(:items_nueva_venta, [%{id_producto: "", cantidad: 1}])
+     |> assign(:venta_form_params, %{})}
   end
 
   def handle_event("agregar_item", _params, socket) do
@@ -79,134 +87,65 @@ defmodule TiendaAlbumesWeb.VentasLive do
   end
 
   def handle_event("cerrar_modal", _params, socket) do
-    {:noreply, socket |> assign(:modal, nil) |> assign(:venta_detalle, nil)}
+    {:noreply,
+     socket
+     |> assign(:modal, nil)
+     |> assign(:venta_detalle, nil)
+     |> assign(:venta_form_params, %{})}
   end
 
-  # ── Registrar venta con transacción explícita + ROLLBACK ─────────────────────
-  # SQL: transacción explícita, subquery para MAX(id), UPDATE de stock
+  def handle_event("actualizar_venta_form", params, socket) do
+    {:noreply, assign(socket, :venta_form_params, params)}
+  end
+
+  # ── Registrar venta vía stored procedure ────────────────────────────────────
+  # El procedure encapsula la transacción y el rollback si algo falla.
   def handle_event("guardar_venta", params, socket) do
-    id_cliente = String.to_integer(params["id_cliente"])
-    id_empleado = String.to_integer(params["id_empleado"])
-    fecha = params["fecha"]
+    params = merge_sale_form_params(socket.assigns.venta_form_params, params)
 
-    items =
-      params
-      |> Map.filter(fn {k, _} -> String.starts_with?(k, "producto_") end)
-      |> Enum.map(fn {"producto_" <> idx, id_prod} ->
-        cantidad = String.to_integer(params["cantidad_#{idx}"] || "1")
-        {String.to_integer(id_prod), cantidad}
-      end)
-      |> Enum.filter(fn {id, _} -> id > 0 end)
+    with {:ok, id_cliente} <- parse_required_int(params["id_cliente"]),
+         {:ok, id_empleado} <- parse_required_int(params["id_empleado"]),
+         {:ok, fecha_date} <- parse_required_date(params["fecha"]),
+         {:ok, items} <- build_sale_items(params) do
+      result = StoreProcedures.register_sale(id_cliente, id_empleado, fecha_date, items)
 
-    result =
-      Repo.transaction(fn ->
-        # 1. Insertar la compra — subquery para generar el ID
-        case Repo.query(
-               """
-                 INSERT INTO compra (id_compra, fecha, id_cliente, id_empleado)
-                 VALUES (
-                   (SELECT COALESCE(MAX(id_compra), 0) + 1 FROM compra),
-                   $1, $2, $3
-                 )
-                 RETURNING id_compra
-               """,
-               [fecha, id_cliente, id_empleado]
-             ) do
-          {:ok, %{rows: [[id_compra]]}} ->
-            # 2. Por cada producto: validar stock con EXISTS, insertar detalle, descontar stock
-            Enum.each(items, fn {id_producto, cantidad} ->
-              # Validar stock suficiente con subquery EXISTS
-              case Repo.query(
-                     """
-                       SELECT EXISTS (
-                         SELECT 1 FROM producto
-                         WHERE id_producto = $1 AND stock >= $2
-                       )
-                     """,
-                     [id_producto, cantidad]
-                   ) do
-                {:ok, %{rows: [[true]]}} -> :ok
-                _ -> Repo.rollback({:stock_insuficiente, id_producto})
-              end
+      case result do
+        {:ok, _message} ->
+          {:noreply,
+           socket
+           |> assign(:productos, listar_productos_disponibles())
+           |> assign(:modal, nil)
+           |> refrescar_ventas()
+           |> put_flash(:info, "Venta registrada correctamente.")}
 
-              # Obtener precio actual
-              {:ok, %{rows: [[precio]]}} =
-                Repo.query("SELECT precio FROM producto WHERE id_producto = $1", [id_producto])
-
-              # Insertar detalle
-              Repo.query(
-                """
-                  INSERT INTO detalle_compra (id_compra, id_producto, cantidad, precio_unitario)
-                  VALUES ($1, $2, $3, $4)
-                """,
-                [id_compra, id_producto, cantidad, precio]
-              )
-
-              # Descontar stock
-              Repo.query(
-                """
-                  UPDATE producto SET stock = stock - $1 WHERE id_producto = $2
-                """,
-                [cantidad, id_producto]
-              )
-            end)
-
-            id_compra
-
-          {:error, reason} ->
-            Repo.rollback(reason)
-        end
-      end)
-
-    case result do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(:productos, listar_productos_disponibles())
-         |> assign(:modal, nil)
-         |> refrescar_ventas()
-         |> put_flash(:info, "Venta registrada correctamente.")}
-
-      {:error, {:stock_insuficiente, id}} ->
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           "Stock insuficiente para el producto ##{id}. Operación revertida (ROLLBACK)."
-         )}
-
-      {:error, _} ->
-        {:noreply,
-         put_flash(socket, :error, "Error al registrar la venta. Operación revertida (ROLLBACK).")}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
+      end
+    else
+      {:error, message} ->
+        {:noreply, put_flash(socket, :error, message)}
     end
   end
 
   # ── Eliminar venta ────────────────────────────
   def handle_event("eliminar_venta", %{"id" => id}, socket) do
-    id_int = String.to_integer(id)
-    # Restaurar stock antes de eliminar
-    Repo.transaction(fn ->
-      {:ok, %{rows: items}} =
-        Repo.query("SELECT id_producto, cantidad FROM detalle_compra WHERE id_compra = $1", [
-          id_int
-        ])
+    if socket.assigns.puede_eliminar_venta do
+      id_int = String.to_integer(id)
 
-      Enum.each(items, fn [id_prod, cant] ->
-        Repo.query("UPDATE producto SET stock = stock + $1 WHERE id_producto = $2", [
-          cant,
-          id_prod
-        ])
-      end)
+      case StoreProcedures.delete_sale(id_int) do
+        {:ok, _message} ->
+          {:noreply,
+           socket
+           |> assign(:productos, listar_productos_disponibles())
+           |> refrescar_ventas()
+           |> put_flash(:info, "Venta eliminada y stock restaurado.")}
 
-      Repo.query("DELETE FROM detalle_compra WHERE id_compra = $1", [id_int])
-      Repo.query("DELETE FROM compra WHERE id_compra = $1", [id_int])
-    end)
-
-    {:noreply,
-     socket
-     |> assign(:productos, listar_productos_disponibles())
-     |> refrescar_ventas()
-     |> put_flash(:info, "Venta eliminada y stock restaurado.")}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   # ══════════════════════════════════════════════
@@ -405,6 +344,69 @@ defmodule TiendaAlbumesWeb.VentasLive do
   defp sort_value(nil), do: ""
   defp sort_value(value), do: value
 
+  defp parse_required_int(value) do
+    case Integer.parse(to_string(value || "")) do
+      {int, ""} -> {:ok, int}
+      _ -> {:error, "Debes seleccionar cliente, empleado y un producto válido."}
+    end
+  end
+
+  defp parse_required_date(value) do
+    case Date.from_iso8601(to_string(value || "")) do
+      {:ok, date} -> {:ok, date}
+      {:error, _} -> {:error, "La fecha de la venta no es válida."}
+    end
+  end
+
+  defp build_sale_items(params) do
+    items =
+      0..20
+      |> Enum.reduce([], fn idx, acc ->
+        product_key = "producto_#{idx}"
+
+        case params[product_key] do
+          nil ->
+            acc
+
+          "" ->
+            acc
+
+          "0" ->
+            acc
+
+          id_prod ->
+            cantidad = params["cantidad_#{idx}"] || "1"
+
+            case {Integer.parse(to_string(id_prod)), Integer.parse(to_string(cantidad))} do
+              {{id, ""}, {qty, ""}} when id > 0 and qty > 0 ->
+                [{id, qty} | acc]
+
+              _ ->
+                acc
+            end
+        end
+      end)
+      |> Enum.reverse()
+
+    if items == [] do
+      {:error, "Debes seleccionar al menos un producto en la venta."}
+    else
+      {:ok, items}
+    end
+  end
+
+  defp merge_sale_form_params(stored_params, submitted_params) do
+    Enum.reduce(stored_params || %{}, submitted_params, fn {key, stored_value}, acc ->
+      case Map.get(acc, key) do
+        nil -> Map.put(acc, key, stored_value)
+        "" -> Map.put(acc, key, stored_value)
+        _ -> acc
+      end
+    end)
+  end
+
+  defp format_procedure_error(reason), do: to_string(reason)
+
   attr :label, :string, required: true
   attr :table, :string, required: true
   attr :field, :atom, required: true
@@ -452,7 +454,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
       perfil_error={@perfil_error}
     >
       <%!-- ENCABEZADO --%>
-      <div class="mb-6 flex items-center justify-between">
+      <div class="mt-6 mb-6 flex items-center justify-between sm:mt-8 lg:mt-10">
         <div>
           <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);">
             Gestión
@@ -612,15 +614,17 @@ defmodule TiendaAlbumesWeb.VentasLive do
                     >
                       Ver detalle
                     </button>
-                    <button
-                      phx-click="eliminar_venta"
-                      phx-value-id={v.id}
-                      data-confirm="¿Eliminar esta venta? El stock será restaurado."
-                      class="btn btn-xs"
-                      style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
-                    >
-                      Eliminar
-                    </button>
+                    <%= if @puede_eliminar_venta do %>
+                      <button
+                        phx-click="eliminar_venta"
+                        phx-value-id={v.id}
+                        data-confirm="¿Eliminar esta venta? El stock será restaurado."
+                        class="btn btn-xs"
+                        style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
+                      >
+                        Eliminar
+                      </button>
+                    <% end %>
                   </div>
                 </td>
               </tr>
@@ -749,7 +753,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
               Registra compra, valida stock y descuenta unidades en una sola transacción
             </p>
 
-            <form phx-submit="guardar_venta">
+            <form phx-change="actualizar_venta_form" phx-submit="guardar_venta">
               <%!-- Datos de la venta --%>
               <div class="grid grid-cols-3 gap-3 mb-5">
                 <div>
@@ -760,7 +764,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
                     type="date"
                     name="fecha"
                     required
-                    value={Date.utc_today() |> Date.to_string()}
+                    value={Map.get(@venta_form_params, "fecha", Date.utc_today() |> Date.to_string())}
                     class="input input-sm w-full"
                     style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
                   />
@@ -777,7 +781,12 @@ defmodule TiendaAlbumesWeb.VentasLive do
                   >
                     <option value="">Seleccionar...</option>
                     <%= for {nombre, id} <- @clientes do %>
-                      <option value={id}>{nombre}</option>
+                      <option
+                        value={id}
+                        selected={Map.get(@venta_form_params, "id_cliente", "") == to_string(id)}
+                      >
+                        {nombre}
+                      </option>
                     <% end %>
                   </select>
                 </div>
@@ -793,7 +802,12 @@ defmodule TiendaAlbumesWeb.VentasLive do
                   >
                     <option value="">Seleccionar...</option>
                     <%= for {nombre, id} <- @empleados do %>
-                      <option value={id}>{nombre}</option>
+                      <option
+                        value={id}
+                        selected={Map.get(@venta_form_params, "id_empleado", "") == to_string(id)}
+                      >
+                        {nombre}
+                      </option>
                     <% end %>
                   </select>
                 </div>
@@ -818,7 +832,12 @@ defmodule TiendaAlbumesWeb.VentasLive do
                     >
                       <option value="0">Seleccionar...</option>
                       <%= for p <- @productos do %>
-                        <option value={p.id}>
+                        <option
+                          value={p.id}
+                          selected={
+                            Map.get(@venta_form_params, "producto_#{idx}", "") == to_string(p.id)
+                          }
+                        >
                           {p.titulo} — {p.formato} — ${p.precio} (stock: {p.stock})
                         </option>
                       <% end %>
@@ -832,7 +851,7 @@ defmodule TiendaAlbumesWeb.VentasLive do
                       type="number"
                       name={"cantidad_#{idx}"}
                       min="1"
-                      value="1"
+                      value={Map.get(@venta_form_params, "cantidad_#{idx}", "1")}
                       class="input input-sm w-full"
                       style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
                     />

@@ -2,24 +2,45 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   use TiendaAlbumesWeb, :live_view
 
   alias TiendaAlbumes.Repo
+  alias TiendaAlbumes.StoreProcedures
+  alias TiendaAlbumesWeb.RoleAccess
 
   @impl true
   def mount(_params, _session, socket) do
+    role = socket.assigns.current_scope.employee_role
+
+    if RoleAccess.can_access_inventory?(role) do
+      mount_inventory(socket, role)
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "Acceso denegado.")
+       |> redirect(to: ~p"/")}
+    end
+  end
+
+  defp mount_inventory(socket, role) do
     # Crea el VIEW automáticamente si no existe todavía
     crear_view_si_no_existe()
 
     artistas = listar_artistas()
+    albumes = listar_albumes()
     generos = listar_generos()
 
     socket =
       socket
       |> assign(:artistas, artistas)
+      |> assign(:albumes, albumes)
       |> assign(:generos, generos)
       |> assign(:sorts, %{
         productos: %{field: :titulo, direction: :asc},
         estadisticas: %{field: :valor, direction: :desc},
         artistas: %{field: :productos, direction: :desc}
       })
+      |> assign(:current_employee_role, role)
+      |> assign(:puede_crear_producto, RoleAccess.can_create_products?(role))
+      |> assign(:puede_editar_producto, RoleAccess.can_update_products?(role))
+      |> assign(:puede_eliminar_producto, RoleAccess.can_delete_products?(role))
       |> assign(:vista_activa, :inventario)
       |> assign(:filtros, %{
         "formato" => "",
@@ -82,135 +103,105 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   # ──────────────────────────────────────────────
 
   def handle_event("nuevo_producto", _params, socket) do
-    {:noreply, assign(socket, :modal, :nuevo)}
+    if socket.assigns.puede_crear_producto do
+      {:noreply, assign(socket, :modal, :nuevo)}
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   def handle_event("editar_producto", %{"id" => id}, socket) do
-    producto = obtener_producto(String.to_integer(id))
-    {:noreply, socket |> assign(:modal, :editar) |> assign(:producto_editando, producto)}
+    if socket.assigns.puede_editar_producto do
+      producto = obtener_producto(String.to_integer(id))
+      {:noreply, socket |> assign(:modal, :editar) |> assign(:producto_editando, producto)}
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   def handle_event("cerrar_modal", _params, socket) do
     {:noreply, socket |> assign(:modal, nil) |> assign(:producto_editando, nil)}
   end
 
-  # ── Crear producto con transacción explícita + ROLLBACK ──────────────────────
-  # Requisito: al menos 1 transacción explícita con manejo de error y ROLLBACK
+  # ── Crear producto vía stored procedure ──────────────────────────────────────
+  # La validación y el manejo de errores viven en Postgres.
   def handle_event("guardar_producto", params, socket) do
-    %{
-      "id_album" => id_album,
-      "id_formato" => id_formato,
-      "precio" => precio,
-      "stock" => stock
-    } = params
+    if socket.assigns.puede_crear_producto do
+      %{
+        "id_album" => id_album,
+        "id_formato" => id_formato,
+        "precio" => precio,
+        "stock" => stock
+      } = params
 
-    # Verificamos que el álbum exista usando subquery con EXISTS (requisito subquery)
-    # y ejecutamos la inserción dentro de una transacción explícita con ROLLBACK.
-    result =
-      Repo.transaction(fn repo ->
-        # 1) Validar con subquery EXISTS que el álbum exista
-        existe_sql = """
-          SELECT EXISTS (
-            SELECT 1 FROM album WHERE id_album = $1
-          )
-        """
+      result =
+        StoreProcedures.create_product(
+          String.to_integer(id_album),
+          String.to_integer(id_formato),
+          Decimal.new(precio),
+          String.to_integer(stock)
+        )
 
-        case repo.query(existe_sql, [String.to_integer(id_album)]) do
-          {:ok, %{rows: [[true]]}} ->
-            :ok
+      case result do
+        {:ok, _message} ->
+          {:noreply,
+           socket
+           |> refrescar_datos()
+           |> assign(:modal, nil)
+           |> put_flash(:info, "Producto creado correctamente.")}
 
-          _ ->
-            repo.rollback(:album_no_encontrado)
-        end
-
-        # 2) Verificar con subquery IN que el formato sea válido
-        formato_sql = """
-          SELECT COUNT(*) FROM formato
-          WHERE id_formato IN (SELECT id_formato FROM formato WHERE id_formato = $1)
-        """
-
-        case repo.query(formato_sql, [String.to_integer(id_formato)]) do
-          {:ok, %{rows: [[n]]}} when n > 0 -> :ok
-          _ -> repo.rollback(:formato_invalido)
-        end
-
-        # 3) Insertar el nuevo producto
-        insert_sql = """
-          INSERT INTO producto (id_producto, id_album, id_formato, precio, stock)
-          VALUES (
-            (SELECT COALESCE(MAX(id_producto), 0) + 1 FROM producto),
-            $1, $2, $3, $4
-          )
-        """
-
-        case repo.query(insert_sql, [
-               String.to_integer(id_album),
-               String.to_integer(id_formato),
-               Decimal.new(precio),
-               String.to_integer(stock)
-             ]) do
-          {:ok, _} -> :ok
-          {:error, reason} -> repo.rollback(reason)
-        end
-      end)
-
-    case result do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> refrescar_datos()
-         |> assign(:modal, nil)
-         |> put_flash(:info, "Producto creado correctamente.")}
-
-      {:error, :album_no_encontrado} ->
-        {:noreply,
-         put_flash(socket, :error, "El álbum indicado no existe. Operación revertida (ROLLBACK).")}
-
-      {:error, :formato_invalido} ->
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           "El formato indicado no es válido. Operación revertida (ROLLBACK)."
-         )}
-
-      {:error, _} ->
-        {:noreply,
-         put_flash(socket, :error, "Error al crear el producto. Operación revertida (ROLLBACK).")}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
     end
   end
 
   # ── Actualizar producto ───────────────────────
   def handle_event("actualizar_producto", params, socket) do
-    %{"_id" => id, "precio" => precio, "stock" => stock} = params
+    if socket.assigns.puede_editar_producto do
+      %{"_id" => id, "precio" => precio, "stock" => stock} = params
 
-    result =
-      Repo.query(
-        "UPDATE producto SET precio = $1, stock = $2 WHERE id_producto = $3",
-        [Decimal.new(precio), String.to_integer(stock), String.to_integer(id)]
-      )
+      result =
+        StoreProcedures.update_product(
+          String.to_integer(id),
+          Decimal.new(precio),
+          String.to_integer(stock)
+        )
 
-    case result do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> refrescar_datos()
-         |> assign(:modal, nil)
-         |> put_flash(:info, "Producto actualizado.")}
+      case result do
+        {:ok, _message} ->
+          {:noreply,
+           socket
+           |> refrescar_datos()
+           |> assign(:modal, nil)
+           |> put_flash(:info, "Producto actualizado.")}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Error al actualizar.")}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
     end
   end
 
   # ── Eliminar producto ─────────────────────────
   def handle_event("eliminar_producto", %{"id" => id}, socket) do
-    Repo.query("DELETE FROM producto WHERE id_producto = $1", [String.to_integer(id)])
+    if socket.assigns.puede_eliminar_producto do
+      case StoreProcedures.delete_product(String.to_integer(id)) do
+        {:ok, _message} ->
+          {:noreply,
+           socket
+           |> refrescar_datos()
+           |> put_flash(:info, "Producto eliminado.")}
 
-    {:noreply,
-     socket
-     |> refrescar_datos()
-     |> put_flash(:info, "Producto eliminado.")}
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, format_procedure_error(reason))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Acceso denegado.")}
+    end
   end
 
   # ══════════════════════════════════════════════
@@ -494,6 +485,26 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   end
 
   # ── 4. Catálogo completo (artistas + géneros) ─────────────────────────────────
+  defp listar_albumes do
+    case Repo.query(
+           """
+           SELECT al.titulo, al.id_album, ar.nombre
+           FROM album al
+           JOIN artista ar ON al.id_artista = ar.id_artista
+           ORDER BY al.titulo
+           """,
+           []
+         ) do
+      {:ok, result} ->
+        Enum.map(result.rows, fn [titulo, id, artista] ->
+          {"#{titulo} · #{artista}", id}
+        end)
+
+      _ ->
+        []
+    end
+  end
+
   defp listar_artistas do
     case Repo.query("SELECT id_artista, nombre FROM artista ORDER BY nombre", []) do
       {:ok, result} -> Enum.map(result.rows, fn [id, nombre] -> {nombre, id} end)
@@ -595,6 +606,8 @@ defmodule TiendaAlbumesWeb.InventarioLive do
   defp sort_value(nil), do: ""
   defp sort_value(value), do: value
 
+  defp format_procedure_error(reason), do: to_string(reason)
+
   attr :label, :string, required: true
   attr :table, :string, required: true
   attr :field, :atom, required: true
@@ -642,7 +655,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
       perfil_error={@perfil_error}
     >
       <%!-- ENCABEZADO + TABS --%>
-      <div class="mb-6 flex items-center justify-between">
+      <div class="mt-6 mb-6 flex items-center justify-between sm:mt-8 lg:mt-10">
         <div>
           <p style="font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--c-text-muted);">
             Gestión
@@ -691,7 +704,7 @@ defmodule TiendaAlbumesWeb.InventarioLive do
           >
             Top Artistas
           </button>
-          <%= if @vista_activa == :inventario do %>
+          <%= if @vista_activa == :inventario and @puede_crear_producto do %>
             <button phx-click="nuevo_producto" class="btn btn-primary btn-sm">+ Nuevo</button>
           <% end %>
         </div>
@@ -905,23 +918,27 @@ defmodule TiendaAlbumesWeb.InventarioLive do
                   </td>
                   <td>
                     <div class="flex gap-2">
-                      <button
-                        phx-click="editar_producto"
-                        phx-value-id={p.id}
-                        class="btn btn-xs"
-                        style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        phx-click="eliminar_producto"
-                        phx-value-id={p.id}
-                        data-confirm="¿Eliminar este producto?"
-                        class="btn btn-xs"
-                        style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
-                      >
-                        Eliminar
-                      </button>
+                      <%= if @puede_editar_producto do %>
+                        <button
+                          phx-click="editar_producto"
+                          phx-value-id={p.id}
+                          class="btn btn-xs"
+                          style="background-color: var(--c-btn-sec-bg); border-color: var(--c-border); color: var(--c-text-primary);"
+                        >
+                          Editar
+                        </button>
+                      <% end %>
+                      <%= if @puede_eliminar_producto do %>
+                        <button
+                          phx-click="eliminar_producto"
+                          phx-value-id={p.id}
+                          data-confirm="¿Eliminar este producto?"
+                          class="btn btn-xs"
+                          style="background-color: var(--c-danger-bg); border-color: var(--c-danger-border); color: var(--c-danger);"
+                        >
+                          Eliminar
+                        </button>
+                      <% end %>
                     </div>
                   </td>
                 </tr>
@@ -1159,15 +1176,19 @@ defmodule TiendaAlbumesWeb.InventarioLive do
             <form phx-submit="guardar_producto">
               <div class="mb-3">
                 <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">
-                  Álbum (ID)
+                  Álbum
                 </label>
-                <input
-                  type="number"
+                <select
                   name="id_album"
                   required
-                  class="input input-sm w-full"
+                  class="select select-sm w-full"
                   style="background-color: var(--c-bg-surface); border-color: var(--c-border); color: var(--c-text-primary);"
-                />
+                >
+                  <option value="">Seleccionar álbum...</option>
+                  <%= for {titulo, id} <- @albumes do %>
+                    <option value={id}>{titulo}</option>
+                  <% end %>
+                </select>
               </div>
               <div class="mb-3">
                 <label style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--c-text-muted); display: block; margin-bottom: 4px;">

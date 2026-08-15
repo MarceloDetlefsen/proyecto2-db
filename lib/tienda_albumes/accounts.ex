@@ -5,7 +5,7 @@ defmodule TiendaAlbumes.Accounts do
 
   import Ecto.Query, warn: false
   alias TiendaAlbumes.Repo
-  alias TiendaAlbumes.Accounts.{User, UserToken, UserNotifier}
+  alias TiendaAlbumes.Accounts.{Scope, User, UserToken, UserNotifier}
 
   ## Database getters
 
@@ -20,6 +20,39 @@ defmodule TiendaAlbumes.Accounts do
   end
 
   def get_user!(id), do: Repo.get!(User, id)
+
+  def get_employee_by_user_id(user_id) when is_integer(user_id) do
+    case Repo.query(
+           """
+           SELECT id_empleado, nombre, puesto, telefono, user_id, db_role
+           FROM empleado
+           WHERE user_id = $1
+           LIMIT 1
+           """,
+           [user_id]
+         ) do
+      {:ok, %{rows: [[id, nombre, puesto, telefono, user_id, db_role]]}} ->
+        %{
+          id: id,
+          nombre: nombre,
+          puesto: puesto,
+          telefono: telefono,
+          user_id: user_id,
+          db_role: db_role
+        }
+
+      _ ->
+        nil
+    end
+  end
+
+  def get_employee_by_user_id(_), do: nil
+
+  def scope_with_employee(%Scope{} = scope) do
+    Scope.with_employee(scope, get_employee_by_user_id(scope.user && scope.user.id))
+  end
+
+  def scope_with_employee(nil), do: nil
 
   ## Registro
 

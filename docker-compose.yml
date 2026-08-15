@@ -5,13 +5,13 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-proy2}
+      POSTGRES_USER: ${DB_USER:-proy3}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
       POSTGRES_DB: ${DB_NAME:-tienda_albumes_prod}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-proy2} -d ${DB_NAME:-tienda_albumes_prod}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-proy3} -d ${DB_NAME:-tienda_albumes_prod}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,7 +28,7 @@ services:
       - "${PORT:-4000}:4000"
     environment:
       # Base de datos
-      DATABASE_URL: "ecto://${DB_USER:-proy2}:${DB_PASSWORD:-secret}@db:5432/${DB_NAME:-tienda_albumes_prod}"
+      DATABASE_URL: "ecto://${DB_USER:-proy3}:${DB_PASSWORD:-secret}@db:5432/${DB_NAME:-tienda_albumes_prod}"
       # Phoenix
       PHX_HOST: "${PHX_HOST:-localhost}"
       PORT: "4000"

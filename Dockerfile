@@ -25,11 +25,6 @@ COPY lib lib/
 # Compilar la aplicación
 RUN mix compile
 
-# Copiar assets y compilar estáticos.
-# Debe ocurrir después de compilar para que exista phoenix-colocated/*.
-COPY assets assets/
-RUN MIX_ENV=prod mix assets.deploy
-
 # Generar release
 RUN mix release
 
